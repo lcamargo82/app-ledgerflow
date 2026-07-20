@@ -6,6 +6,7 @@ import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/signup_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
+import '../features/accounts/presentation/accounts_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
@@ -65,6 +66,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      GoRoute(
+        path: '/accounts/first',
+        name: 'first-account',
+        builder: (context, state) => const AccountsScreen(firstAccount: true),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);
@@ -107,6 +113,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: 'settings',
                 pageBuilder: (context, state) =>
                     const NoTransitionPage(child: SettingsScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'accounts',
+                    name: 'accounts',
+                    builder: (context, state) => const AccountsScreen(),
+                  ),
+                ],
               ),
             ],
           ),
