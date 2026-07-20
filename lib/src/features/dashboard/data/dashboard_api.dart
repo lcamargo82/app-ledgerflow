@@ -17,6 +17,12 @@ class DashboardApi {
       queryParameters: {'month': month, 'year': year},
     );
 
-    return DashboardSummary.fromJson(response.data ?? {});
+    return DashboardSummary.fromJson(_unwrapObject(response.data));
+  }
+
+  Map<String, dynamic> _unwrapObject(Map<String, dynamic>? json) {
+    final data = json?['data'];
+
+    return data is Map<String, dynamic> ? data : json ?? {};
   }
 }
