@@ -5,6 +5,7 @@ import '../../../../core/errors/app_exception.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_me.dart';
 import '../../domain/user_profile.dart';
+import '../../../onboarding/domain/onboarding_result.dart';
 
 final authControllerProvider = Provider<AuthController>((ref) {
   final controller = AuthController(ref.watch(authRepositoryProvider));
@@ -96,6 +97,26 @@ class AuthController extends ChangeNotifier {
     _profile = null;
     _status = AuthStatus.unauthenticated;
     _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void applyOnboardingResult(OnboardingResult result) {
+    final current = _me;
+
+    if (current == null) {
+      return;
+    }
+
+    _me = AuthMe(
+      userId: current.userId,
+      email: current.email,
+      tokenVersion: current.tokenVersion,
+      onboardingRequired: result.onboardingRequired,
+      currentWorkspace: result.currentWorkspace,
+      workspaces: result.workspaces,
+    );
+    _status = AuthStatus.authenticated;
     _errorMessage = null;
     notifyListeners();
   }
