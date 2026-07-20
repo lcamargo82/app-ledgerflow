@@ -4,6 +4,19 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
 import '../../../core/widgets/section_header.dart';
+import '../domain/transaction_entry_type.dart';
+
+void openNewTransactionSheet(
+  BuildContext context, {
+  TransactionEntryType initialType = TransactionEntryType.expense,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (context) => _NewTransactionSheet(initialType: initialType),
+  );
+}
 
 class TransactionsScreen extends StatelessWidget {
   const TransactionsScreen({super.key});
@@ -13,23 +26,13 @@ class TransactionsScreen extends StatelessWidget {
     return LedgerScaffold(
       title: 'Transações',
       subtitle: 'Registre receitas, despesas e transferencias.',
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: IconButton.filled(
-            tooltip: 'Nova transação',
-            onPressed: () => _openNewTransaction(context),
-            icon: const Icon(Icons.add),
-          ),
-        ),
-      ],
       children: [
         const _TransactionSummary(),
         const SizedBox(height: 24),
         SectionHeader(
           title: 'Este mes',
           actionLabel: 'Nova',
-          onAction: () => _openNewTransaction(context),
+          onAction: () => openNewTransactionSheet(context),
         ),
         const SizedBox(height: 8),
         const _TransactionRow(
@@ -56,15 +59,6 @@ class TransactionsScreen extends StatelessWidget {
           icon: Icons.sync_alt,
         ),
       ],
-    );
-  }
-
-  static void _openNewTransaction(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => const _NewTransactionSheet(),
     );
   }
 }
@@ -180,11 +174,28 @@ class _TransactionRow extends StatelessWidget {
   }
 }
 
-class _NewTransactionSheet extends StatelessWidget {
-  const _NewTransactionSheet();
+class _NewTransactionSheet extends StatefulWidget {
+  const _NewTransactionSheet({required this.initialType});
+
+  final TransactionEntryType initialType;
+
+  @override
+  State<_NewTransactionSheet> createState() => _NewTransactionSheetState();
+}
+
+class _NewTransactionSheetState extends State<_NewTransactionSheet> {
+  late TransactionEntryType _type = widget.initialType;
 
   @override
   Widget build(BuildContext context) {
+    final showCategory = _type != TransactionEntryType.transfer;
+    final title = switch (_type) {
+      TransactionEntryType.income => 'Nova receita',
+      TransactionEntryType.expense => 'Nova despesa',
+      TransactionEntryType.transfer => 'Nova transferencia',
+      TransactionEntryType.cardExpense => 'Despesa no cartao',
+    };
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -196,18 +207,31 @@ class _NewTransactionSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Nova transação',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 16),
-          SegmentedButton<String>(
+          SegmentedButton<TransactionEntryType>(
             segments: const [
-              ButtonSegment(value: 'income', label: Text('Receita')),
-              ButtonSegment(value: 'expense', label: Text('Despesa')),
-              ButtonSegment(value: 'transfer', label: Text('Transferir')),
+              ButtonSegment(
+                value: TransactionEntryType.income,
+                label: Text('Receita'),
+              ),
+              ButtonSegment(
+                value: TransactionEntryType.expense,
+                label: Text('Despesa'),
+              ),
+              ButtonSegment(
+                value: TransactionEntryType.transfer,
+                label: Text('Transferir'),
+              ),
             ],
-            selected: {'expense'},
+            selected: {
+              _type == TransactionEntryType.cardExpense
+                  ? TransactionEntryType.expense
+                  : _type,
+            },
+            onSelectionChanged: (selected) {
+              setState(() => _type = selected.first);
+            },
           ),
           const SizedBox(height: 16),
           const TextField(
@@ -224,13 +248,15 @@ class _NewTransactionSheet extends StatelessWidget {
               prefixIcon: Icon(Icons.notes_outlined),
             ),
           ),
-          const SizedBox(height: 12),
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'Categoria',
-              prefixIcon: Icon(Icons.category_outlined),
+          if (showCategory) ...[
+            const SizedBox(height: 12),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Categoria',
+                prefixIcon: Icon(Icons.category_outlined),
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: () => Navigator.of(context).pop(),
