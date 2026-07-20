@@ -61,13 +61,13 @@ class AuthApi {
   Future<AuthMe> me() async {
     final response = await _dio.get<Map<String, dynamic>>('/auth/me');
 
-    return AuthMe.fromJson(response.data ?? {});
+    return AuthMe.fromJson(_unwrapObject(response.data));
   }
 
   Future<UserProfile> profile() async {
     final response = await _dio.get<Map<String, dynamic>>('/users/profile');
 
-    return UserProfile.fromJson(response.data ?? {});
+    return UserProfile.fromJson(_unwrapObject(response.data));
   }
 
   Future<UserProfile> updateProfile({
@@ -86,6 +86,12 @@ class AuthApi {
       },
     );
 
-    return UserProfile.fromJson(response.data ?? {});
+    return UserProfile.fromJson(_unwrapObject(response.data));
+  }
+
+  Map<String, dynamic> _unwrapObject(Map<String, dynamic>? json) {
+    final data = json?['data'];
+
+    return data is Map<String, dynamic> ? data : json ?? {};
   }
 }

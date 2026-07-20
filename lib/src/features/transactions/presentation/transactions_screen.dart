@@ -353,6 +353,11 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
         ? const <Category>[]
         : controller.categoriesFor(transactionType);
     final unsupported = transactionType == null;
+    final canSubmit =
+        !controller.isLoading &&
+        !controller.isSaving &&
+        controller.accounts.isNotEmpty &&
+        categories.isNotEmpty;
     final title = switch (_entryType) {
       TransactionEntryType.income => 'Nova receita',
       TransactionEntryType.expense => 'Nova despesa',
@@ -420,6 +425,41 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                         ),
                       ] else ...[
                         const SizedBox(height: 16),
+                        if (controller.isLoading)
+                          const LfCard(
+                            child: Row(
+                              children: [
+                                SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Carregando contas e categorias...',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (controller.accounts.isEmpty)
+                          const LfCard(
+                            child: Text(
+                              'Cadastre uma conta antes de criar transacoes.',
+                            ),
+                          )
+                        else if (categories.isEmpty)
+                          LfCard(
+                            child: Text(
+                              'Cadastre uma categoria de ${transactionType.label.toLowerCase()} antes de criar este lancamento.',
+                            ),
+                          ),
+                        if (controller.isLoading ||
+                            controller.accounts.isEmpty ||
+                            categories.isEmpty)
+                          const SizedBox(height: 12),
                         DropdownButtonFormField<Account>(
                           initialValue: _account,
                           dropdownColor: AppColors.surfaceHighest,
@@ -440,8 +480,9 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) =>
-                              setState(() => _account = value),
+                          onChanged: controller.isLoading
+                              ? null
+                              : (value) => setState(() => _account = value),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<Category>(
@@ -462,8 +503,9 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) =>
-                              setState(() => _category = value),
+                          onChanged: controller.isLoading
+                              ? null
+                              : (value) => setState(() => _category = value),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
@@ -498,7 +540,7 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
               if (!unsupported) ...[
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: controller.isSaving ? null : _submit,
+                  onPressed: canSubmit ? _submit : null,
                   icon: controller.isSaving
                       ? const SizedBox.square(
                           dimension: 18,

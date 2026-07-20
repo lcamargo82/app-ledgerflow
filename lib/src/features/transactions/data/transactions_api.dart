@@ -17,7 +17,7 @@ class TransactionsApi {
       queryParameters: {'page': page, 'perPage': perPage},
     );
 
-    return TransactionPage.fromJson(response.data ?? {});
+    return TransactionPage.fromJson(_unwrapObject(response.data));
   }
 
   Future<MonthlySummary> monthlySummary({
@@ -30,7 +30,7 @@ class TransactionsApi {
       queryParameters: {'month': month, 'year': year},
     );
 
-    return MonthlySummary.fromJson(response.data ?? {});
+    return MonthlySummary.fromJson(_unwrapObject(response.data));
   }
 
   Future<LedgerTransaction> create({
@@ -42,6 +42,12 @@ class TransactionsApi {
       data: request.toJson(),
     );
 
-    return LedgerTransaction.fromJson(response.data ?? {});
+    return LedgerTransaction.fromJson(_unwrapObject(response.data));
+  }
+
+  Map<String, dynamic> _unwrapObject(Map<String, dynamic>? json) {
+    final data = json?['data'];
+
+    return data is Map<String, dynamic> ? data : json ?? {};
   }
 }

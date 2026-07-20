@@ -58,4 +58,25 @@ void main() {
     expect(summary.expensesByCategory.single.amountCents, 3250);
     expect(summary.expensesByCategory.single.percent, 10);
   });
+
+  test('accepts alternate dashboard summary and category field names', () {
+    final summary = DashboardSummary.fromJson({
+      'balance': '500.00',
+      'includedBalance': '450.00',
+      'overallBalance': '650.00',
+      'categoryRanking': [
+        {
+          'id': 'home-id',
+          'categoryName': 'Moradia',
+          'total': '120.00',
+          'percentage': 40,
+        },
+      ],
+    });
+
+    expect(summary.currentBalanceCents, 50000);
+    expect(summary.totalIncludedCents, 45000);
+    expect(summary.totalOverallCents, 65000);
+    expect(summary.expensesByCategory.single.name, 'Moradia');
+  });
 }

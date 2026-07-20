@@ -19,13 +19,24 @@ class DashboardSummary {
   bool get hasExcludedAmount => totalIncludedCents != totalOverallCents;
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {
-    final expenses = json['expensesByCategory'];
+    final expenses = _readFirst(json, [
+      'expensesByCategory',
+      'expenseByCategory',
+      'categories',
+      'categoryRanking',
+    ]);
     final accounts = json['accounts'];
 
     return DashboardSummary(
-      currentBalanceCents: Money.parseCents(json['currentBalance']),
-      totalIncludedCents: Money.parseCents(json['totalIncluded']),
-      totalOverallCents: Money.parseCents(json['totalOverall']),
+      currentBalanceCents: Money.parseCents(
+        _readFirst(json, ['currentBalance', 'balance']),
+      ),
+      totalIncludedCents: Money.parseCents(
+        _readFirst(json, ['totalIncluded', 'includedBalance']),
+      ),
+      totalOverallCents: Money.parseCents(
+        _readFirst(json, ['totalOverall', 'overallBalance']),
+      ),
       expensesByCategory: expenses is List
           ? expenses
                 .whereType<Map<String, dynamic>>()
