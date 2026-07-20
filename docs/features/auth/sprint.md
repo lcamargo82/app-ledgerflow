@@ -2,31 +2,32 @@
 
 ## Objetivo
 
-Entregar a base real de entrada do app Flutter: login, cadastro, recuperacao de senha, sessao persistida, perfil e logout.
+Conectar as telas de autenticacao existentes a API real e estabelecer a base de sessao segura do app.
 
 ## Tarefas
 
-- [ ] Criar estrutura `lib/src`.
-- [ ] Criar `AppConfig` com base URL local.
-- [ ] Adicionar dependencias iniciais: `go_router`, `flutter_riverpod`, `dio`, `flutter_secure_storage`, `google_fonts`.
-- [ ] Criar tema escuro inicial baseado em `docs/design/design-system.md`.
-- [ ] Criar `AuthSession`, `UserProfile` e modelos de request/response.
+- [ ] Adicionar dependencias `dio` e `flutter_secure_storage`.
+- [ ] Criar `AppConfig` com `API_BASE_URL` via `--dart-define`.
 - [ ] Criar `SecureTokenStorage`.
 - [ ] Criar `DioClient` com base URL, timeouts e interceptor de token.
+- [ ] Criar parser de erro padronizado da API.
+- [ ] Criar modelos `AuthTokens`, `UserProfile`, `WorkspaceSummary` e `AuthMe`.
+- [ ] Criar `AuthApi`.
 - [ ] Criar `AuthRepository`.
-- [ ] Criar `AuthController` com login, signup, refresh, logout e boot.
-- [ ] Configurar `go_router` com rotas publicas e autenticadas.
-- [ ] Implementar telas de login, cadastro e esqueci senha.
-- [ ] Implementar tela de perfil/configuracoes basica.
-- [ ] Implementar estados de loading, erro e sucesso.
-- [ ] Escrever testes unitarios de parser/modelos.
-- [ ] Escrever testes de controller para login/logout/refresh.
+- [ ] Criar `AuthController` com `boot`, `login`, `signup`, `refresh`, `logout`, `forgotPassword` e `resetPassword`.
+- [ ] Configurar `GoRouter.redirect` baseado em estado de sessao.
+- [ ] Conectar tela de login.
+- [ ] Conectar tela de cadastro.
+- [ ] Conectar tela de recuperacao de senha.
+- [ ] Criar/ajustar tela de perfil para `GET /users/profile` e `PATCH /users/profile`.
+- [ ] Exibir loading e erros por snackbar/dialog.
+- [ ] Criar testes de models/parsers.
+- [ ] Criar testes de controller para boot, login, refresh falho e logout.
 
 ## Definicao De Pronto
 
-- App abre em splash e decide login/dashboard com base na sessao.
-- Login e cadastro funcionam contra `http://localhost:3020`.
-- Tokens nao ficam em memoria permanente sem armazenamento seguro.
-- Logout limpa sessao local.
-- Erros de API aparecem de forma compreensivel.
-
+- `flutter analyze` sem issues.
+- `flutter test` passando.
+- Login real funciona contra producao ou local configurado.
+- Sessao persiste ao fechar e abrir o app.
+- Sessao expirada volta para login sem loop.

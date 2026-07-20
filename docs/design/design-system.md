@@ -2,13 +2,14 @@
 
 ## Origem
 
-Sistema visual extraido do arquivo:
+Sistema visual extraido dos arquivos de referencia:
 
 ```text
 /Users/leandro/Downloads/stitch_ledgerflow_personal_finance_ui.zip
+/Users/leandro/Downloads/stitch_ledgerflow_personal_finance_ui (1).zip
 ```
 
-O ZIP contem um documento `precision_dark/DESIGN.md` e telas HTML exportadas.
+Os ZIPs contem um documento `precision_dark/DESIGN.md` e telas HTML exportadas.
 
 ## Direcao Visual
 
@@ -188,4 +189,3 @@ Configuracoes:
 - senha;
 - biometria;
 - logout.
-

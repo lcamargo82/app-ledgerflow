@@ -1,18 +1,10 @@
-# Feature Spec: Autenticacao E Perfil
+# Spec: Autenticacao E Perfil
 
 ## Objetivo
 
-Permitir que o usuario crie conta, faca login, mantenha sessao ativa com refresh token, recupere senha, edite perfil e encerre a sessao com seguranca.
+Entregar a entrada real do app: cadastro, login, boot de sessao, refresh token, recuperacao de senha, perfil e logout.
 
-## Backend Disponivel
-
-Base local:
-
-```text
-http://localhost:3020
-```
-
-Endpoints:
+## Endpoints
 
 - `POST /auth/signup`
 - `POST /auth/login`
@@ -24,102 +16,51 @@ Endpoints:
 - `GET /users/profile`
 - `PATCH /users/profile`
 
-## Modelo De Sessao
+## Fluxo De Boot
 
-Resposta esperada em signup/login/refresh:
+1. App abre em splash.
+2. Lê access token e refresh token do storage seguro.
+3. Sem tokens: navega para `/login`.
+4. Com access token: chama `GET /auth/me`.
+5. Se `401`, tenta `POST /auth/refresh`.
+6. Se refresh falhar, limpa storage e navega para `/login`.
+7. Se `onboardingRequired = true`, navega para `/onboarding`.
+8. Se existe `currentWorkspace`, entra no shell autenticado.
 
-```json
-{
-  "accessToken": "jwt-token",
-  "refreshToken": "refresh-token",
-  "tokenType": "Bearer",
-  "expiresIn": "15m",
-  "refreshExpiresIn": "7d",
-  "user": {
-    "id": "uuid",
-    "email": "leandro@example.com",
-    "name": "Leandro Silva",
-    "active": true,
-    "tokenVersion": 0,
-    "createdAt": "2026-07-18T12:00:00.000Z",
-    "updatedAt": "2026-07-18T12:00:00.000Z"
-  }
-}
-```
+## Modelos
 
-## Fluxos
+- `AuthTokens`: `accessToken`, `refreshToken`, `tokenType`, `expiresIn`, `refreshExpiresIn`.
+- `UserProfile`: `id`, `email`, `name`, `active`, `tokenVersion`, `createdAt`, `updatedAt`.
+- `AuthMe`: `sub`, `email`, `tokenVersion`, `onboardingRequired`, `currentWorkspace`, `workspaces`.
 
-### Cadastro
+## UI
 
-1. Usuario informa nome, email e senha.
-2. App valida campos localmente.
-3. App chama `POST /auth/signup`.
-4. App salva tokens em armazenamento seguro.
-5. App redireciona para criacao/complemento de perfil ou dashboard.
+- Login com email, senha, lembrar de mim e biometria visual.
+- Cadastro com nome, email e senha.
+- Recuperacao de senha com email.
+- Perfil com dados do usuario e acao de alterar nome/email/senha.
+- Logout na tela de Perfil.
 
-### Login
+## Validacoes
 
-1. Usuario informa email e senha.
-2. App chama `POST /auth/login`.
-3. App salva access token e refresh token.
-4. App carrega perfil e abre dashboard.
+- Email valido.
+- Senha obrigatoria no login.
+- Cadastro exige nome, email e senha.
+- Troca de senha exige senha atual quando nova senha for informada.
 
-### Boot Do App
+## Estados
 
-1. App abre splash.
-2. App le refresh token do armazenamento seguro.
-3. Se existir, tenta `POST /auth/refresh`.
-4. Se renovar, entra no dashboard.
-5. Se falhar, limpa tokens e abre login.
-
-### Logout
-
-1. Usuario toca em sair.
-2. App chama `POST /auth/logout` com access token.
-3. App limpa tokens localmente.
-4. App volta para login.
-
-Se a API falhar no logout, o app ainda deve limpar a sessao local.
-
-### Perfil
-
-1. App chama `GET /users/profile`.
-2. Usuario edita nome, email ou senha.
-3. App chama `PATCH /users/profile`.
-4. App atualiza estado local.
-
-## Estados De UI
-
-- idle
-- loading
-- success
-- invalid input
-- unauthorized
-- network error
-- server error
-
-## Validacoes Iniciais
-
-- email obrigatorio e valido;
-- senha obrigatoria;
-- senha de cadastro/reset com tamanho minimo definido pela API;
-- nome obrigatorio no cadastro/perfil;
-- mensagens de erro simples e localizadas em portugues.
-
-## Decisoes Flutter
-
-- `AuthRepository` para falar com a API.
-- `AuthController` Riverpod para coordenar estados.
-- `SecureTokenStorage` para tokens.
-- `Dio` interceptor para incluir bearer token.
-- Redirect no `go_router` para proteger rotas autenticadas.
+- Idle
+- Loading
+- Success
+- Validation error
+- API error
+- Session expired
 
 ## Criterios De Aceite
 
-- Usuario consegue cadastrar e cair em uma area autenticada.
-- Usuario consegue logar apos fechar e abrir o app.
-- Access token expirado e renovado silenciosamente com refresh token.
-- Refresh invalido limpa sessao e envia para login.
-- Logout remove tokens locais mesmo se a API estiver indisponivel.
-- Perfil autenticado carrega e pode ser atualizado.
-
+- Usuario consegue cadastrar e logar contra a API.
+- Tokens ficam apenas no storage seguro.
+- `GET /auth/me` decide onboarding/dashboard.
+- Refresh token ocorre uma vez por `401`.
+- Logout limpa storage e estado Riverpod.
