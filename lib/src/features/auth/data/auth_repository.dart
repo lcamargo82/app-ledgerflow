@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/api_error_parser.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../../core/storage/active_workspace_storage.dart';
 import '../../../core/storage/token_storage.dart';
 import '../domain/auth_me.dart';
 import '../domain/auth_session.dart';
@@ -12,14 +13,20 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
     api: AuthApi(ref.watch(dioProvider)),
     storage: ref.watch(tokenStorageProvider),
+    activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
   );
 });
 
 class AuthRepository {
-  const AuthRepository({required this.api, required this.storage});
+  const AuthRepository({
+    required this.api,
+    required this.storage,
+    required this.activeWorkspaceStorage,
+  });
 
   final AuthApi api;
   final TokenStorage storage;
+  final ActiveWorkspaceStorage activeWorkspaceStorage;
 
   Future<AuthMe?> boot() async {
     try {
@@ -29,7 +36,14 @@ class AuthRepository {
         return null;
       }
 
-      return api.me();
+      final me = await api.me();
+      final workspaceId = me.currentWorkspace?.id;
+
+      if (workspaceId != null && workspaceId.isNotEmpty) {
+        await activeWorkspaceStorage.save(workspaceId);
+      }
+
+      return me;
     } catch (error) {
       await storage.clear();
       throw ApiErrorParser.parse(error);
@@ -44,6 +58,11 @@ class AuthRepository {
       final response = await api.login(email: email, password: password);
       await storage.save(response.tokens);
       final me = await api.me();
+      final workspaceId = me.currentWorkspace?.id;
+
+      if (workspaceId != null && workspaceId.isNotEmpty) {
+        await activeWorkspaceStorage.save(workspaceId);
+      }
 
       return AuthSession(tokens: response.tokens, user: response.user, me: me);
     } catch (error) {
@@ -64,6 +83,11 @@ class AuthRepository {
       );
       await storage.save(response.tokens);
       final me = await api.me();
+      final workspaceId = me.currentWorkspace?.id;
+
+      if (workspaceId != null && workspaceId.isNotEmpty) {
+        await activeWorkspaceStorage.save(workspaceId);
+      }
 
       return AuthSession(tokens: response.tokens, user: response.user, me: me);
     } catch (error) {
@@ -94,6 +118,7 @@ class AuthRepository {
       // Local logout must always win, even when the session is already invalid.
     } finally {
       await storage.clear();
+      await activeWorkspaceStorage.clear();
     }
   }
 }
