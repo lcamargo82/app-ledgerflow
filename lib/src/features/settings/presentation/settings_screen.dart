@@ -34,10 +34,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           email: auth.profile?.email ?? auth.me?.email ?? '',
         ),
         const SizedBox(height: 24),
-        const _SettingsTile(
+        _SettingsTile(
           icon: Icons.account_balance_outlined,
           title: 'Minhas contas',
           subtitle: 'Carteiras, bancos e saldos',
+          onTap: () => context.go('/settings/accounts'),
         ),
         const SizedBox(height: 8),
         const _SettingsTile(
@@ -127,38 +128,47 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return LfCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: AppColors.surfaceHigh,
-            foregroundColor: AppColors.primary,
-            child: Icon(icon),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(subtitle, style: Theme.of(context).textTheme.labelMedium),
-              ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: LfCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: AppColors.surfaceHigh,
+              foregroundColor: AppColors.primary,
+              child: Icon(icon),
             ),
-          ),
-          const Icon(Icons.chevron_right),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }
