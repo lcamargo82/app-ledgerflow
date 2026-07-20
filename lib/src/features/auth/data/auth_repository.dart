@@ -113,6 +113,24 @@ class AuthRepository {
     }
   }
 
+  Future<UserProfile> updateProfile({
+    String? name,
+    String? email,
+    String? oldPassword,
+    String? password,
+  }) async {
+    try {
+      return api.updateProfile(
+        name: name,
+        email: email,
+        oldPassword: oldPassword,
+        password: password,
+      );
+    } catch (error) {
+      throw ApiErrorParser.parse(error);
+    }
+  }
+
   Future<void> logout() async {
     try {
       await api.logout();

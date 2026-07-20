@@ -69,4 +69,23 @@ class AuthApi {
 
     return UserProfile.fromJson(response.data ?? {});
   }
+
+  Future<UserProfile> updateProfile({
+    String? name,
+    String? email,
+    String? oldPassword,
+    String? password,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/users/profile',
+      data: {
+        'name': ?name,
+        'email': ?email,
+        'oldPassword': ?oldPassword,
+        'password': ?password,
+      },
+    );
+
+    return UserProfile.fromJson(response.data ?? {});
+  }
 }

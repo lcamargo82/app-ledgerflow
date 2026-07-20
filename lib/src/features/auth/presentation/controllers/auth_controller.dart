@@ -129,6 +129,27 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<bool> updateProfile({required String name, required String email}) {
+    return _run(() async {
+      _profile = await _repository.updateProfile(
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+      );
+    });
+  }
+
+  Future<bool> changePassword({
+    required String oldPassword,
+    required String password,
+  }) {
+    return _run(() async {
+      _profile = await _repository.updateProfile(
+        oldPassword: oldPassword,
+        password: password,
+      );
+    });
+  }
+
   Future<bool> _run(Future<void> Function() action) async {
     _isLoading = true;
     _errorMessage = null;
