@@ -1,19 +1,20 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/storage/active_workspace_storage.dart';
 import '../../data/dashboard_repository.dart';
 import '../../domain/dashboard_summary.dart';
 
-final dashboardControllerProvider = Provider<DashboardController>((ref) {
-  final controller = DashboardController(
-    repository: ref.watch(dashboardRepositoryProvider),
-    activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
-  );
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+final dashboardControllerProvider = ChangeNotifierProvider<DashboardController>(
+  (ref) {
+    final controller = DashboardController(
+      repository: ref.watch(dashboardRepositoryProvider),
+      activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
+    );
+    return controller;
+  },
+);
 
 class DashboardController extends ChangeNotifier {
   DashboardController({

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/storage/active_workspace_storage.dart';
@@ -9,13 +9,14 @@ import '../../../transactions/data/transactions_repository.dart';
 import '../../../transactions/domain/transaction.dart';
 import '../../domain/report_period.dart';
 
-final reportsControllerProvider = Provider<ReportsController>((ref) {
+final reportsControllerProvider = ChangeNotifierProvider<ReportsController>((
+  ref,
+) {
   final controller = ReportsController(
     transactionsRepository: ref.watch(transactionsRepositoryProvider),
     dashboardRepository: ref.watch(dashboardRepositoryProvider),
     activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
   );
-  ref.onDispose(controller.dispose);
   return controller;
 });
 

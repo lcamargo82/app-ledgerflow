@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/dashboard/presentation/controllers/dashboard_controller.dart';
+import '../../features/reports/presentation/controllers/reports_controller.dart';
 import '../../features/transactions/domain/transaction_entry_type.dart';
+import '../../features/transactions/presentation/controllers/transactions_controller.dart';
 import '../../features/transactions/presentation/transactions_screen.dart';
 import '../theme/app_colors.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   bool _menuOpen = false;
 
   @override
@@ -55,6 +59,7 @@ class _AppShellState extends State<AppShell> {
       index,
       initialLocation: index == widget.navigationShell.currentIndex,
     );
+    _refreshDestination(index);
   }
 
   void _toggleMenu() {
@@ -64,6 +69,17 @@ class _AppShellState extends State<AppShell> {
   void _handleQuickAction(TransactionEntryType type) {
     setState(() => _menuOpen = false);
     openNewTransactionSheet(context, initialType: type);
+  }
+
+  void _refreshDestination(int index) {
+    switch (index) {
+      case 0:
+        ref.read(dashboardControllerProvider).load();
+      case 1:
+        ref.read(transactionsControllerProvider).load();
+      case 2:
+        ref.read(reportsControllerProvider).load();
+    }
   }
 }
 

@@ -1,19 +1,19 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/storage/active_workspace_storage.dart';
 import '../../data/categories_repository.dart';
 import '../../domain/category.dart';
 
-final categoriesControllerProvider = Provider<CategoriesController>((ref) {
-  final controller = CategoriesController(
-    repository: ref.watch(categoriesRepositoryProvider),
-    activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
-  );
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+final categoriesControllerProvider =
+    ChangeNotifierProvider<CategoriesController>((ref) {
+      final controller = CategoriesController(
+        repository: ref.watch(categoriesRepositoryProvider),
+        activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
+      );
+      return controller;
+    });
 
 class CategoriesController extends ChangeNotifier {
   CategoriesController({

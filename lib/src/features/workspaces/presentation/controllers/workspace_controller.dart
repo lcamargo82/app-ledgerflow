@@ -1,17 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../auth/domain/workspace_summary.dart';
 import '../../data/workspaces_repository.dart';
 import '../../domain/workspace.dart';
 
-final workspaceControllerProvider = Provider<WorkspaceController>((ref) {
-  final controller = WorkspaceController(
-    ref.watch(workspacesRepositoryProvider),
-  );
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+final workspaceControllerProvider = ChangeNotifierProvider<WorkspaceController>(
+  (ref) {
+    final controller = WorkspaceController(
+      ref.watch(workspacesRepositoryProvider),
+    );
+    return controller;
+  },
+);
 
 class WorkspaceController extends ChangeNotifier {
   WorkspaceController(this.repository);

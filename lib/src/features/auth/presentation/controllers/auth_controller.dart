@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../data/auth_repository.dart';
@@ -7,9 +7,8 @@ import '../../domain/auth_me.dart';
 import '../../domain/user_profile.dart';
 import '../../../onboarding/domain/onboarding_result.dart';
 
-final authControllerProvider = Provider<AuthController>((ref) {
+final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {
   final controller = AuthController(ref.watch(authRepositoryProvider));
-  ref.onDispose(controller.dispose);
   return controller;
 });
 
