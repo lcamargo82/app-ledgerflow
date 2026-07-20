@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
@@ -18,6 +19,10 @@ final dioProvider = Provider<Dio>((ref) {
   );
 
   dio.interceptors.add(_AuthInterceptor(dio: dio, storage: storage));
+
+  if (kDebugMode) {
+    dio.interceptors.add(const _SafeHttpLogInterceptor());
+  }
 
   return dio;
 });
@@ -99,4 +104,55 @@ class _AuthInterceptor extends Interceptor {
   }
 
   bool _isRefreshRoute(String path) => path.contains('/auth/refresh');
+}
+
+class _SafeHttpLogInterceptor extends Interceptor {
+  const _SafeHttpLogInterceptor();
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    debugPrint('[HTTP] --> ${options.method} ${options.uri}');
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    debugPrint(
+      '[HTTP] <-- ${response.statusCode} '
+      '${response.requestOptions.method} ${response.requestOptions.uri}',
+    );
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final request = err.requestOptions;
+    final statusCode = err.response?.statusCode;
+    final message = _safeMessage(err.response?.data) ?? err.message;
+
+    debugPrint(
+      '[HTTP] !! ${statusCode ?? '-'} ${request.method} ${request.uri} '
+      '${message ?? ''}',
+    );
+    handler.next(err);
+  }
+
+  String? _safeMessage(Object? data) {
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+
+      if (message is String) {
+        return message;
+      }
+
+      if (message is List) {
+        return message.whereType<String>().join(' | ');
+      }
+    }
+
+    return null;
+  }
 }
