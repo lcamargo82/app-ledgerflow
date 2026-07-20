@@ -1,19 +1,19 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/onboarding_repository.dart';
 import '../../domain/onboarding_choice.dart';
 
-final onboardingControllerProvider = Provider<OnboardingController>((ref) {
-  final controller = OnboardingController(
-    repository: ref.watch(onboardingRepositoryProvider),
-    authController: ref.watch(authControllerProvider),
-  );
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+final onboardingControllerProvider =
+    ChangeNotifierProvider<OnboardingController>((ref) {
+      final controller = OnboardingController(
+        repository: ref.watch(onboardingRepositoryProvider),
+        authController: ref.watch(authControllerProvider),
+      );
+      return controller;
+    });
 
 class OnboardingController extends ChangeNotifier {
   OnboardingController({

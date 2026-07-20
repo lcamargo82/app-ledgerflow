@@ -333,6 +333,12 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
   DateTime _occurredAt = DateTime.now();
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(transactionsControllerProvider).load());
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();

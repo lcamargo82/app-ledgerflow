@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/storage/active_workspace_storage.dart';
@@ -10,16 +10,16 @@ import '../../../categories/domain/category.dart';
 import '../../data/transactions_repository.dart';
 import '../../domain/transaction.dart';
 
-final transactionsControllerProvider = Provider<TransactionsController>((ref) {
-  final controller = TransactionsController(
-    repository: ref.watch(transactionsRepositoryProvider),
-    accountsRepository: ref.watch(accountsRepositoryProvider),
-    categoriesRepository: ref.watch(categoriesRepositoryProvider),
-    activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
-  );
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+final transactionsControllerProvider =
+    ChangeNotifierProvider<TransactionsController>((ref) {
+      final controller = TransactionsController(
+        repository: ref.watch(transactionsRepositoryProvider),
+        accountsRepository: ref.watch(accountsRepositoryProvider),
+        categoriesRepository: ref.watch(categoriesRepositoryProvider),
+        activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
+      );
+      return controller;
+    });
 
 class TransactionsController extends ChangeNotifier {
   TransactionsController({

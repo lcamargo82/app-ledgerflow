@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../data/settings_preferences_storage.dart';
 import '../../domain/settings_preferences.dart';
 
-final settingsControllerProvider = Provider<SettingsController>((ref) {
+final settingsControllerProvider = ChangeNotifierProvider<SettingsController>((
+  ref,
+) {
   final controller = SettingsController(
     storage: ref.watch(settingsPreferencesStorageProvider),
   );
-  ref.onDispose(controller.dispose);
   return controller;
 });
 

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/storage/active_workspace_storage.dart';
@@ -7,12 +7,13 @@ import '../../data/accounts_repository.dart';
 import '../../domain/account.dart';
 import '../../domain/institution.dart';
 
-final accountsControllerProvider = Provider<AccountsController>((ref) {
+final accountsControllerProvider = ChangeNotifierProvider<AccountsController>((
+  ref,
+) {
   final controller = AccountsController(
     repository: ref.watch(accountsRepositoryProvider),
     activeWorkspaceStorage: ref.watch(activeWorkspaceStorageProvider),
   );
-  ref.onDispose(controller.dispose);
   return controller;
 });
 
