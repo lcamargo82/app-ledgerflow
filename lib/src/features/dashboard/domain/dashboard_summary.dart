@@ -27,6 +27,17 @@ class DashboardSummary {
     ]);
     final accounts = json['accounts'];
 
+    final parsedExpenses = expenses is List
+        ? expenses
+              .whereType<Map<String, dynamic>>()
+              .map(ExpenseByCategory.fromJson)
+              .toList()
+        : const <ExpenseByCategory>[];
+    final expenseTotalCents = parsedExpenses.fold<int>(
+      0,
+      (total, expense) => total + expense.amountCents.abs(),
+    );
+
     return DashboardSummary(
       currentBalanceCents: Money.parseCents(
         _readFirst(json, ['currentBalance', 'balance']),
@@ -37,12 +48,11 @@ class DashboardSummary {
       totalOverallCents: Money.parseCents(
         _readFirst(json, ['totalOverall', 'overallBalance']),
       ),
-      expensesByCategory: expenses is List
-          ? expenses
-                .whereType<Map<String, dynamic>>()
-                .map(ExpenseByCategory.fromJson)
+      expensesByCategory: expenseTotalCents > 0
+          ? parsedExpenses
+                .map((expense) => expense.withTotal(expenseTotalCents))
                 .toList()
-          : const [],
+          : parsedExpenses,
       accounts: accounts is List
           ? accounts
                 .whereType<Map<String, dynamic>>()
@@ -76,8 +86,25 @@ class ExpenseByCategory {
       name: _readString(json, ['name', 'categoryName'], fallback: 'Categoria'),
       color: _readString(json, ['color'], fallback: '#64748B'),
       icon: _readString(json, ['icon'], fallback: 'tag'),
-      amountCents: Money.parseCents(_readFirst(json, ['amount', 'total'])),
+      amountCents: Money.parseCents(
+        _readFirst(json, ['amount', 'total', 'totalAmount']),
+      ),
       percent: _readDouble(json, ['percent', 'percentage']),
+    );
+  }
+
+  ExpenseByCategory withTotal(int totalCents) {
+    if (percent > 0 || totalCents <= 0) {
+      return this;
+    }
+
+    return ExpenseByCategory(
+      categoryId: categoryId,
+      name: name,
+      color: color,
+      icon: icon,
+      amountCents: amountCents,
+      percent: amountCents.abs() * 100 / totalCents,
     );
   }
 }

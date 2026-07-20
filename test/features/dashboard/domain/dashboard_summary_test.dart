@@ -79,4 +79,22 @@ void main() {
     expect(summary.totalOverallCents, 65000);
     expect(summary.expensesByCategory.single.name, 'Moradia');
   });
+
+  test('parses dashboard totalAmount and derives category percentage', () {
+    final summary = DashboardSummary.fromJson({
+      'expensesByCategory': [
+        {
+          'categoryId': 'food-id',
+          'name': 'Alimentacao',
+          'totalAmount': '75.00',
+        },
+        {'categoryId': 'home-id', 'name': 'Moradia', 'totalAmount': '25.00'},
+      ],
+    });
+
+    expect(summary.expensesByCategory.first.amountCents, 7500);
+    expect(summary.expensesByCategory.first.percent, 75);
+    expect(summary.expensesByCategory.last.amountCents, 2500);
+    expect(summary.expensesByCategory.last.percent, 25);
+  });
 }

@@ -328,8 +328,8 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   late TransactionEntryType _entryType = widget.initialType;
-  Account? _account;
-  Category? _category;
+  String? _accountId;
+  String? _categoryId;
   DateTime _occurredAt = DateTime.now();
 
   @override
@@ -352,12 +352,22 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
     final categories = transactionType == null
         ? const <Category>[]
         : controller.categoriesFor(transactionType);
+    final accountValue =
+        controller.accounts.any((account) => account.id == _accountId)
+        ? _accountId
+        : null;
+    final categoryValue =
+        categories.any((category) => category.id == _categoryId)
+        ? _categoryId
+        : null;
     final unsupported = transactionType == null;
     final canSubmit =
         !controller.isLoading &&
         !controller.isSaving &&
         controller.accounts.isNotEmpty &&
-        categories.isNotEmpty;
+        categories.isNotEmpty &&
+        accountValue != null &&
+        categoryValue != null;
     final title = switch (_entryType) {
       TransactionEntryType.income => 'Nova receita',
       TransactionEntryType.expense => 'Nova despesa',
@@ -412,7 +422,7 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                         onSelectionChanged: (selected) {
                           setState(() {
                             _entryType = selected.first;
-                            _category = null;
+                            _categoryId = null;
                           });
                         },
                       ),
@@ -460,8 +470,8 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                             controller.accounts.isEmpty ||
                             categories.isEmpty)
                           const SizedBox(height: 12),
-                        DropdownButtonFormField<Account>(
-                          initialValue: _account,
+                        DropdownButtonFormField<String>(
+                          initialValue: accountValue,
                           dropdownColor: AppColors.surfaceHighest,
                           style: const TextStyle(color: AppColors.onSurface),
                           decoration: const InputDecoration(
@@ -475,18 +485,18 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                           items: controller.accounts
                               .map(
                                 (account) => DropdownMenuItem(
-                                  value: account,
+                                  value: account.id,
                                   child: Text(account.name),
                                 ),
                               )
                               .toList(),
                           onChanged: controller.isLoading
                               ? null
-                              : (value) => setState(() => _account = value),
+                              : (value) => setState(() => _accountId = value),
                         ),
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<Category>(
-                          initialValue: _category,
+                        DropdownButtonFormField<String>(
+                          initialValue: categoryValue,
                           dropdownColor: AppColors.surfaceHighest,
                           style: const TextStyle(color: AppColors.onSurface),
                           decoration: const InputDecoration(
@@ -498,14 +508,14 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                           items: categories
                               .map(
                                 (category) => DropdownMenuItem(
-                                  value: category,
+                                  value: category.id,
                                   child: Text(category.name),
                                 ),
                               )
                               .toList(),
                           onChanged: controller.isLoading
                               ? null
-                              : (value) => setState(() => _category = value),
+                              : (value) => setState(() => _categoryId = value),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
@@ -603,8 +613,8 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
     }
 
     final request = CreateTransactionRequest(
-      accountId: _account!.id,
-      categoryId: _category!.id,
+      accountId: _accountId!,
+      categoryId: _categoryId!,
       type: type,
       amountCents: Money.parseInputToCents(_amountController.text),
       occurredAt: _occurredAt,
