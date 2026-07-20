@@ -1,64 +1,116 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../core/formatting/money.dart';
+import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
 import '../../../core/widgets/section_header.dart';
+import '../domain/dashboard_summary.dart';
+import 'controllers/dashboard_controller.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(dashboardControllerProvider).load());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = ref.watch(dashboardControllerProvider);
+    final summary = controller.summary;
+
     return LedgerScaffold(
-      title: 'Olá, Leandro!',
-      subtitle: 'Aqui esta o resumo do seu fluxo financeiro hoje.',
+      title: 'Olá!',
+      subtitle: 'Aqui esta o resumo do seu fluxo financeiro neste mes.',
       children: [
-        const _BalanceCard(),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => context.go('/transactions'),
-                icon: const Icon(Icons.add_circle_outline),
-                label: const Text('Receita'),
+        if (controller.isLoading)
+          const _LoadingState()
+        else if (controller.errorMessage != null)
+          _ErrorState(
+            message: controller.errorMessage!,
+            onRetry: () => ref.read(dashboardControllerProvider).load(),
+          )
+        else if (summary == null || !summary.hasAccounts)
+          _EmptyDashboardCard(
+            onCreateAccount: () => context.go('/settings/accounts'),
+          )
+        else ...[
+          _BalanceCard(summary: summary),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => context.go('/transactions'),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Receita'),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => context.go('/transactions'),
-                icon: const Icon(Icons.remove_circle_outline),
-                label: const Text('Despesa'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/transactions'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  label: const Text('Despesa'),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const _CategoryChartCard(),
-        const SizedBox(height: 24),
-        SectionHeader(
-          title: 'Transações recentes',
-          actionLabel: 'Ver todas',
-          onAction: () => context.go('/transactions'),
-        ),
-        const SizedBox(height: 8),
-        ..._recentTransactions.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _TransactionTile(item: item),
+            ],
           ),
-        ),
+          const SizedBox(height: 24),
+          _CategoryChartCard(expenses: summary.expensesByCategory),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Contas ativas',
+            actionLabel: 'Gerenciar',
+            onAction: () => context.go('/settings/accounts'),
+          ),
+          const SizedBox(height: 8),
+          ...summary.accounts.map(
+            (account) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _AccountTile(account: account),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.go('/transactions'),
+            icon: const Icon(Icons.receipt_long_outlined),
+            label: const Text('Ver extrato completo'),
+          ),
+        ],
       ],
     );
   }
 }
 
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 56),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
 class _BalanceCard extends StatelessWidget {
-  const _BalanceCard();
+  const _BalanceCard({required this.summary});
+
+  final DashboardSummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -68,23 +120,47 @@ class _BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SALDO TOTAL', style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 8),
           Text(
-            'R\$ 12.500,00',
-            style: Theme.of(context).textTheme.headlineLarge,
+            'SALDO EM CONTAS',
+            style: Theme.of(context).textTheme.labelMedium,
           ),
           const SizedBox(height: 8),
-          const Row(
-            children: [
-              Icon(Icons.trending_up, size: 18, color: AppColors.emerald),
-              SizedBox(width: 4),
-              Text(
-                '+2,4% este mes',
-                style: TextStyle(
-                  color: AppColors.emerald,
-                  fontWeight: FontWeight.w600,
+          Text(
+            Money.formatCents(summary.totalIncludedCents),
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          if (summary.hasExcludedAmount) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.visibility_off_outlined,
+                  size: 18,
+                  color: AppColors.onSurfaceVariant,
                 ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${Money.formatCents(summary.totalOverallCents)} no total geral',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _BalanceMetric(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Saldo atual',
+                value: Money.formatCents(summary.currentBalanceCents),
+              ),
+              const SizedBox(width: 12),
+              _BalanceMetric(
+                icon: Icons.done_all_outlined,
+                label: 'Incluido',
+                value: Money.formatCents(summary.totalIncludedCents),
               ),
             ],
           ),
@@ -94,8 +170,54 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
+class _BalanceMetric extends StatelessWidget {
+  const _BalanceMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(height: 8),
+            Text(label, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CategoryChartCard extends StatelessWidget {
-  const _CategoryChartCard();
+  const _CategoryChartCard({required this.expenses});
+
+  final List<ExpenseByCategory> expenses;
 
   @override
   Widget build(BuildContext context) {
@@ -108,53 +230,95 @@ class _CategoryChartCard extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 420;
-              final chart = SizedBox(
-                height: 168,
-                width: 168,
-                child: PieChart(
-                  PieChartData(
-                    centerSpaceRadius: 44,
-                    sectionsSpace: 2,
-                    sections: _categorySlices
-                        .map(
-                          (slice) => PieChartSectionData(
-                            value: slice.percent,
-                            color: slice.color,
-                            radius: 28,
-                            showTitle: false,
-                          ),
-                        )
-                        .toList(),
+          if (expenses.isEmpty)
+            const _EmptyExpensesState()
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 420;
+                final chart = SizedBox(
+                  height: 168,
+                  width: 168,
+                  child: PieChart(
+                    PieChartData(
+                      centerSpaceRadius: 44,
+                      sectionsSpace: 2,
+                      sections: expenses
+                          .map(
+                            (expense) => PieChartSectionData(
+                              value: expense.amountCents.abs().toDouble(),
+                              color:
+                                  _colorFromHex(expense.color) ??
+                                  AppColors.primaryContainer,
+                              radius: 28,
+                              showTitle: false,
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ),
-              );
-              final legend = Column(
-                children: _categorySlices
-                    .map((slice) => _LegendRow(slice: slice))
-                    .toList(),
-              );
+                );
+                final legend = Column(
+                  children: expenses
+                      .map((expense) => _LegendRow(expense: expense))
+                      .toList(),
+                );
 
-              if (isWide) {
-                return Row(
+                if (isWide) {
+                  return Row(
+                    children: [
+                      chart,
+                      const SizedBox(width: 24),
+                      Expanded(child: legend),
+                    ],
+                  );
+                }
+
+                return Column(
                   children: [
-                    chart,
-                    const SizedBox(width: 24),
-                    Expanded(child: legend),
+                    Center(child: chart),
+                    const SizedBox(height: 16),
+                    legend,
                   ],
                 );
-              }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
 
-              return Column(
-                children: [
-                  Center(child: chart),
-                  const SizedBox(height: 16),
-                  legend,
-                ],
-              );
-            },
+class _EmptyExpensesState extends StatelessWidget {
+  const _EmptyExpensesState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.donut_large_outlined,
+            size: 36,
+            color: AppColors.onSurfaceVariant,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sem despesas neste mes',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'As categorias aparecem aqui quando houver lancamentos.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
       ),
@@ -163,12 +327,16 @@ class _CategoryChartCard extends StatelessWidget {
 }
 
 class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.slice});
+  const _LegendRow({required this.expense});
 
-  final _CategorySlice slice;
+  final ExpenseByCategory expense;
 
   @override
   Widget build(BuildContext context) {
+    final percent = expense.percent > 0
+        ? '${expense.percent.toStringAsFixed(0)}%'
+        : Money.formatCents(expense.amountCents);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -177,39 +345,45 @@ class _LegendRow extends StatelessWidget {
             width: 12,
             height: 12,
             decoration: BoxDecoration(
-              color: slice.color,
+              color: _colorFromHex(expense.color) ?? AppColors.primaryContainer,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(slice.label)),
-          Text('${slice.percent.toStringAsFixed(0)}%'),
+          Icon(
+            LedgerIconMapper.fromKey(expense.icon),
+            size: 18,
+            color: AppColors.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(expense.name)),
+          Text(percent),
         ],
       ),
     );
   }
 }
 
-class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({required this.item});
+class _AccountTile extends StatelessWidget {
+  const _AccountTile({required this.account});
 
-  final _TransactionItem item;
+  final DashboardAccount account;
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = item.amount.isNegative
+    final balanceColor = account.balanceCents < 0
         ? AppColors.error
         : AppColors.emerald;
-    final prefix = item.amount.isNegative ? '-' : '+';
 
     return LfCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.surfaceHigh,
-            foregroundColor: AppColors.onSurfaceVariant,
-            child: Icon(item.icon),
+            backgroundColor:
+                _colorFromHex(account.color) ?? AppColors.surfaceHigh,
+            foregroundColor: Colors.white,
+            child: Icon(LedgerIconMapper.fromKey(account.icon)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -217,19 +391,33 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  account.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  item.subtitle,
+                  _accountTypeLabel(account.type),
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
               ],
             ),
           ),
-          Text(
-            '$prefix R\$ ${item.amount.abs().toStringAsFixed(2).replaceAll('.', ',')}',
-            style: TextStyle(color: amountColor, fontWeight: FontWeight.w700),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                Money.formatCents(account.balanceCents),
+                style: TextStyle(
+                  color: balanceColor,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (!account.includeInTotal)
+                Text(
+                  'Fora do total',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+            ],
           ),
         ],
       ),
@@ -237,37 +425,89 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
-class _CategorySlice {
-  const _CategorySlice(this.label, this.percent, this.color);
+class _EmptyDashboardCard extends StatelessWidget {
+  const _EmptyDashboardCard({required this.onCreateAccount});
 
-  final String label;
-  final double percent;
-  final Color color;
+  final VoidCallback onCreateAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return LfCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(
+            Icons.account_balance_outlined,
+            size: 48,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Nenhuma conta ativa',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Cadastre uma conta para ver saldo, despesas e resumo do mes.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: onCreateAccount,
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar conta'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _TransactionItem {
-  const _TransactionItem(this.title, this.subtitle, this.amount, this.icon);
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
 
-  final String title;
-  final String subtitle;
-  final double amount;
-  final IconData icon;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return LfCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 40),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tentar novamente'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-const _categorySlices = [
-  _CategorySlice('Moradia', 30, AppColors.primaryContainer),
-  _CategorySlice('Alimentação', 30, AppColors.blue),
-  _CategorySlice('Transporte', 25, AppColors.cyan),
-  _CategorySlice('Lazer', 15, AppColors.emerald),
-];
+String _accountTypeLabel(String value) {
+  return switch (value) {
+    'CHECKING' => 'Conta corrente',
+    'SAVINGS' => 'Poupanca',
+    'WALLET' => 'Carteira',
+    'INVESTMENT' => 'Investimento',
+    'BENEFITS' => 'Beneficios',
+    'CREDIT_CARD' => 'Cartao de credito',
+    _ => 'Outra',
+  };
+}
 
-const _recentTransactions = [
-  _TransactionItem(
-    'Supermercado',
-    'Hoje, 14:30',
-    -248.9,
-    Icons.shopping_cart_outlined,
-  ),
-  _TransactionItem('Salário', 'Ontem, 08:00', 6200, Icons.payments_outlined),
-  _TransactionItem('Uber', 'Ontem, 22:16', -32.5, Icons.local_taxi_outlined),
-];
+Color? _colorFromHex(String? hex) {
+  if (hex == null || !RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) {
+    return null;
+  }
+
+  return Color(int.parse(hex.substring(1), radix: 16) | 0xFF000000);
+}
