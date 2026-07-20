@@ -79,6 +79,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       builder: (context) => const _AccountFormSheet(),
     );
 
@@ -279,110 +280,125 @@ class _AccountFormSheetState extends ConsumerState<_AccountFormSheet> {
   Widget build(BuildContext context) {
     final controller = ref.watch(accountsControllerProvider);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+    return FractionallySizedBox(
+      heightFactor: .9,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: Form(
+          key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Nova conta',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                validator: _requiredName,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  prefixIcon: Icon(Icons.account_balance_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<AccountType>(
-                initialValue: _type,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo',
-                  prefixIcon: Icon(Icons.wallet_outlined),
-                ),
-                items: AccountType.values
-                    .map(
-                      (type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Nova conta',
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _type = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<Institution>(
-                initialValue: _institution,
-                decoration: const InputDecoration(
-                  labelText: 'Instituicao',
-                  prefixIcon: Icon(Icons.apartment_outlined),
-                ),
-                items: controller.institutions
-                    .map(
-                      (institution) => DropdownMenuItem(
-                        value: institution,
-                        child: Text(institution.name),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _nameController,
+                        validator: _requiredName,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome',
+                          prefixIcon: Icon(Icons.account_balance_outlined),
+                        ),
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _institution = value),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _initialBalanceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Saldo inicial',
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descricao',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _accountColors
-                    .map(
-                      (color) => _ColorSwatch(
-                        color: color,
-                        selected: _color == color,
-                        onTap: () => setState(() => _color = color),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<AccountType>(
+                        initialValue: _type,
+                        dropdownColor: AppColors.surfaceHighest,
+                        style: const TextStyle(color: AppColors.onSurface),
+                        decoration: const InputDecoration(
+                          labelText: 'Tipo',
+                          prefixIcon: Icon(Icons.wallet_outlined),
+                        ),
+                        items: AccountType.values
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type.label),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _type = value);
+                          }
+                        },
                       ),
-                    )
-                    .toList(),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<Institution>(
+                        initialValue: _institution,
+                        dropdownColor: AppColors.surfaceHighest,
+                        style: const TextStyle(color: AppColors.onSurface),
+                        decoration: const InputDecoration(
+                          labelText: 'Instituicao',
+                          prefixIcon: Icon(Icons.apartment_outlined),
+                        ),
+                        items: controller.institutions
+                            .map(
+                              (institution) => DropdownMenuItem(
+                                value: institution,
+                                child: Text(institution.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _institution = value),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _initialBalanceController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Saldo inicial',
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Descricao',
+                          prefixIcon: Icon(Icons.notes_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _accountColors
+                            .map(
+                              (color) => _ColorSwatch(
+                                color: color,
+                                selected: _color == color,
+                                onTap: () => setState(() => _color = color),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Incluir no saldo total'),
+                        value: _includeInTotal,
+                        onChanged: (value) =>
+                            setState(() => _includeInTotal = value),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Incluir no saldo total'),
-                value: _includeInTotal,
-                onChanged: (value) => setState(() => _includeInTotal = value),
-              ),
-              const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: controller.isSaving ? null : _submit,
                 icon: controller.isSaving

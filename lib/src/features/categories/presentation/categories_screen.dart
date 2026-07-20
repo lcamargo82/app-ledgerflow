@@ -120,6 +120,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       builder: (context) => _CategoryFormSheet(
         initialType:
             initialType ??
@@ -302,83 +303,98 @@ class _CategoryFormSheetState extends ConsumerState<_CategoryFormSheet> {
   Widget build(BuildContext context) {
     final controller = ref.watch(categoriesControllerProvider);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+    return FractionallySizedBox(
+      heightFactor: .9,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: Form(
+          key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Nova categoria',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                validator: _requiredName,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  prefixIcon: Icon(Icons.sell_outlined),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Nova categoria',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _nameController,
+                        validator: _requiredName,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome',
+                          prefixIcon: Icon(Icons.sell_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SegmentedButton<CategoryType>(
+                        segments: const [
+                          ButtonSegment(
+                            value: CategoryType.income,
+                            label: Text('Receita'),
+                          ),
+                          ButtonSegment(
+                            value: CategoryType.expense,
+                            label: Text('Despesa'),
+                          ),
+                        ],
+                        selected: {_type},
+                        onSelectionChanged: (selected) {
+                          setState(() => _type = selected.first);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Cor',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _categoryColors
+                            .map(
+                              (color) => _ColorSwatch(
+                                color: color,
+                                selected: _color == color,
+                                onTap: () => setState(() => _color = color),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Icone',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _categoryIcons
+                            .map(
+                              (icon) => _IconChoice(
+                                icon: icon,
+                                selected: _icon == icon,
+                                onTap: () => setState(() => _icon = icon),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              SegmentedButton<CategoryType>(
-                segments: const [
-                  ButtonSegment(
-                    value: CategoryType.income,
-                    label: Text('Receita'),
-                  ),
-                  ButtonSegment(
-                    value: CategoryType.expense,
-                    label: Text('Despesa'),
-                  ),
-                ],
-                selected: {_type},
-                onSelectionChanged: (selected) {
-                  setState(() => _type = selected.first);
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Cor', style: Theme.of(context).textTheme.labelMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categoryColors
-                    .map(
-                      (color) => _ColorSwatch(
-                        color: color,
-                        selected: _color == color,
-                        onTap: () => setState(() => _color = color),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-              Text('Icone', style: Theme.of(context).textTheme.labelMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categoryIcons
-                    .map(
-                      (icon) => _IconChoice(
-                        icon: icon,
-                        selected: _icon == icon,
-                        onTap: () => setState(() => _icon = icon),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: controller.isSaving ? null : _submit,
                 icon: controller.isSaving

@@ -29,7 +29,7 @@ class _AppShellState extends State<AppShell> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 72,
+              bottom: 86,
               child: SafeArea(
                 top: false,
                 child: _QuickActionMenu(onSelect: _handleQuickAction),
@@ -235,12 +235,12 @@ class _QuickActionMenu extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
-        height: 230,
+        height: 300,
         child: Stack(
           alignment: Alignment.center,
           children: [
             Align(
-              alignment: const Alignment(-.58, .35),
+              alignment: const Alignment(-.86, .48),
               child: _QuickActionButton(
                 label: TransactionEntryType.transfer.label,
                 icon: Icons.swap_horiz,
@@ -249,7 +249,7 @@ class _QuickActionMenu extends StatelessWidget {
               ),
             ),
             Align(
-              alignment: const Alignment(-.28, -.42),
+              alignment: const Alignment(-.34, -.48),
               child: _QuickActionButton(
                 label: TransactionEntryType.income.label,
                 icon: Icons.trending_up,
@@ -258,7 +258,7 @@ class _QuickActionMenu extends StatelessWidget {
               ),
             ),
             Align(
-              alignment: const Alignment(.32, -.42),
+              alignment: const Alignment(.34, -.48),
               child: _QuickActionButton(
                 label: TransactionEntryType.cardExpense.label,
                 icon: Icons.credit_card,
@@ -267,7 +267,7 @@ class _QuickActionMenu extends StatelessWidget {
               ),
             ),
             Align(
-              alignment: const Alignment(.66, .35),
+              alignment: const Alignment(.86, .48),
               child: _QuickActionButton(
                 label: TransactionEntryType.expense.label,
                 icon: Icons.trending_down,
@@ -301,17 +301,17 @@ class _QuickActionButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(56),
       onTap: onTap,
       child: SizedBox(
-        width: 118,
+        width: 128,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 42,
+              radius: 38,
               backgroundColor: AppColors.surfaceHighest,
               foregroundColor: iconColor,
-              child: Icon(icon, size: 32),
+              child: Icon(icon, size: 30),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,

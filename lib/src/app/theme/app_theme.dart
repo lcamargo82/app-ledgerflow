@@ -110,6 +110,13 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.primaryContainer),
         ),
       ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: const TextStyle(color: AppColors.onSurface),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(AppColors.surfaceHighest),
+          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+        ),
+      ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
