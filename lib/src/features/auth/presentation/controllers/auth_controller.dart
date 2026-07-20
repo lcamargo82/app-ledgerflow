@@ -68,12 +68,14 @@ class AuthController extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    required String passwordConfirmation,
   }) async {
     return _run(() async {
       final session = await _repository.signup(
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password: password,
+        passwordConfirmation: passwordConfirmation,
       );
       _me = session.me;
       _profile = session.user;
