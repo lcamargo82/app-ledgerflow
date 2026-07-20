@@ -41,10 +41,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onTap: () => context.go('/settings/accounts'),
         ),
         const SizedBox(height: 8),
-        const _SettingsTile(
+        _SettingsTile(
           icon: Icons.category_outlined,
           title: 'Categorias',
           subtitle: 'Receitas, despesas e orcamentos',
+          onTap: () => context.go('/settings/categories'),
         ),
         const SizedBox(height: 8),
         const _SettingsTile(
