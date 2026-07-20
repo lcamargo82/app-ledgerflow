@@ -57,7 +57,8 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     widget.navigationShell.goBranch(
       index,
-      initialLocation: index == widget.navigationShell.currentIndex,
+      initialLocation:
+          index == widget.navigationShell.currentIndex || index == 3,
     );
     _refreshDestination(index);
   }
