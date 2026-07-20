@@ -21,6 +21,7 @@ void openNewTransactionSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     builder: (context) => _NewTransactionSheet(initialType: initialType),
   );
 }
@@ -353,121 +354,143 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
       TransactionEntryType.cardExpense => 'Despesa no cartao',
     };
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+    return FractionallySizedBox(
+      heightFactor: .9,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: Form(
+          key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(title, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              SegmentedButton<TransactionEntryType>(
-                segments: const [
-                  ButtonSegment(
-                    value: TransactionEntryType.income,
-                    label: Text('Receita'),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      SegmentedButton<TransactionEntryType>(
+                        segments: const [
+                          ButtonSegment(
+                            value: TransactionEntryType.income,
+                            label: Text('Receita'),
+                          ),
+                          ButtonSegment(
+                            value: TransactionEntryType.expense,
+                            label: Text('Despesa'),
+                          ),
+                          ButtonSegment(
+                            value: TransactionEntryType.transfer,
+                            label: Text('Transferir'),
+                          ),
+                        ],
+                        selected: {
+                          _entryType == TransactionEntryType.cardExpense
+                              ? TransactionEntryType.expense
+                              : _entryType,
+                        },
+                        onSelectionChanged: (selected) {
+                          setState(() {
+                            _entryType = selected.first;
+                            _category = null;
+                          });
+                        },
+                      ),
+                      if (unsupported) ...[
+                        const SizedBox(height: 16),
+                        const LfCard(
+                          child: Text(
+                            'Este tipo de lancamento sera ativado quando a API expor o contrato dedicado.',
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<Account>(
+                          initialValue: _account,
+                          dropdownColor: AppColors.surfaceHighest,
+                          style: const TextStyle(color: AppColors.onSurface),
+                          decoration: const InputDecoration(
+                            labelText: 'Conta',
+                            prefixIcon: Icon(
+                              Icons.account_balance_wallet_outlined,
+                            ),
+                          ),
+                          validator: (value) =>
+                              value == null ? 'Escolha uma conta.' : null,
+                          items: controller.accounts
+                              .map(
+                                (account) => DropdownMenuItem(
+                                  value: account,
+                                  child: Text(account.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _account = value),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<Category>(
+                          initialValue: _category,
+                          dropdownColor: AppColors.surfaceHighest,
+                          style: const TextStyle(color: AppColors.onSurface),
+                          decoration: const InputDecoration(
+                            labelText: 'Categoria',
+                            prefixIcon: Icon(Icons.category_outlined),
+                          ),
+                          validator: (value) =>
+                              value == null ? 'Escolha uma categoria.' : null,
+                          items: categories
+                              .map(
+                                (category) => DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _category = value),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          validator: _requiredAmount,
+                          decoration: const InputDecoration(
+                            labelText: 'Valor',
+                            prefixIcon: Icon(Icons.attach_money),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _descriptionController,
+                          validator: _requiredDescription,
+                          decoration: const InputDecoration(
+                            labelText: 'Descricao',
+                            prefixIcon: Icon(Icons.notes_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _pickDate,
+                          icon: const Icon(Icons.calendar_today_outlined),
+                          label: Text(_dateLabel(_occurredAt)),
+                        ),
+                      ],
+                    ],
                   ),
-                  ButtonSegment(
-                    value: TransactionEntryType.expense,
-                    label: Text('Despesa'),
-                  ),
-                  ButtonSegment(
-                    value: TransactionEntryType.transfer,
-                    label: Text('Transferir'),
-                  ),
-                ],
-                selected: {
-                  _entryType == TransactionEntryType.cardExpense
-                      ? TransactionEntryType.expense
-                      : _entryType,
-                },
-                onSelectionChanged: (selected) {
-                  setState(() {
-                    _entryType = selected.first;
-                    _category = null;
-                  });
-                },
+                ),
               ),
-              if (unsupported) ...[
-                const SizedBox(height: 16),
-                const LfCard(
-                  child: Text(
-                    'Este tipo de lancamento sera ativado quando a API expor o contrato dedicado.',
-                  ),
-                ),
-              ] else ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<Account>(
-                  initialValue: _account,
-                  decoration: const InputDecoration(
-                    labelText: 'Conta',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                  ),
-                  validator: (value) =>
-                      value == null ? 'Escolha uma conta.' : null,
-                  items: controller.accounts
-                      .map(
-                        (account) => DropdownMenuItem(
-                          value: account,
-                          child: Text(account.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _account = value),
-                ),
+              if (!unsupported) ...[
                 const SizedBox(height: 12),
-                DropdownButtonFormField<Category>(
-                  initialValue: _category,
-                  decoration: const InputDecoration(
-                    labelText: 'Categoria',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  validator: (value) =>
-                      value == null ? 'Escolha uma categoria.' : null,
-                  items: categories
-                      .map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _category = value),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  validator: _requiredAmount,
-                  decoration: const InputDecoration(
-                    labelText: 'Valor',
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _descriptionController,
-                  validator: _requiredDescription,
-                  decoration: const InputDecoration(
-                    labelText: 'Descricao',
-                    prefixIcon: Icon(Icons.notes_outlined),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_today_outlined),
-                  label: Text(_dateLabel(_occurredAt)),
-                ),
-                const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: controller.isSaving ? null : _submit,
                   icon: controller.isSaving
