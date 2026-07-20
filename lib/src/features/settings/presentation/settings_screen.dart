@@ -1,20 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(authControllerProvider).loadProfile());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authControllerProvider);
+
     return LedgerScaffold(
       title: 'Configurações',
       subtitle: 'Perfil, preferencias e seguranca da conta.',
       children: [
-        const _ProfileCard(),
+        _ProfileCard(
+          name: auth.profile?.name ?? auth.me?.email ?? 'Usuario',
+          email: auth.profile?.email ?? auth.me?.email ?? '',
+        ),
         const SizedBox(height: 24),
         const _SettingsTile(
           icon: Icons.account_balance_outlined,
@@ -47,7 +65,14 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         OutlinedButton.icon(
-          onPressed: () => context.go('/login'),
+          onPressed: auth.isLoading
+              ? null
+              : () async {
+                  await ref.read(authControllerProvider).logout();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
+                },
           icon: const Icon(Icons.logout),
           label: const Text('Sair'),
         ),
@@ -57,7 +82,10 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  const _ProfileCard({required this.name, required this.email});
+
+  final String name;
+  final String email;
 
   @override
   Widget build(BuildContext context) {
@@ -78,14 +106,8 @@ class _ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Leandro',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                Text(
-                  'leandro@ledgerflow.app',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text(name, style: Theme.of(context).textTheme.headlineSmall),
+                Text(email, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           ),
