@@ -17,12 +17,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordConfirmationController = TextEditingController();
+  bool _hidePassword = true;
+  bool _hidePasswordConfirmation = true;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordConfirmationController.dispose();
     super.dispose();
   }
 
@@ -80,11 +84,51 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _hidePassword,
                         validator: _requiredPassword,
                         decoration: InputDecoration(
                           labelText: 'Senha',
+                          helperText: 'Use maiuscula, minuscula e numero.',
                           prefixIcon: Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            tooltip: _hidePassword
+                                ? 'Mostrar senha'
+                                : 'Ocultar senha',
+                            onPressed: () {
+                              setState(() => _hidePassword = !_hidePassword);
+                            },
+                            icon: Icon(
+                              _hidePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordConfirmationController,
+                        obscureText: _hidePasswordConfirmation,
+                        validator: _requiredPasswordConfirmation,
+                        decoration: InputDecoration(
+                          labelText: 'Confirmar senha',
+                          prefixIcon: Icon(Icons.lock_reset_outlined),
+                          suffixIcon: IconButton(
+                            tooltip: _hidePasswordConfirmation
+                                ? 'Mostrar senha'
+                                : 'Ocultar senha',
+                            onPressed: () {
+                              setState(
+                                () => _hidePasswordConfirmation =
+                                    !_hidePasswordConfirmation,
+                              );
+                            },
+                            icon: Icon(
+                              _hidePasswordConfirmation
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -135,8 +179,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   String? _requiredPassword(String? value) {
-    if ((value ?? '').length < 8) {
+    final password = value ?? '';
+    final hasLowercase = RegExp('[a-z]').hasMatch(password);
+    final hasUppercase = RegExp('[A-Z]').hasMatch(password);
+    final hasNumber = RegExp(r'\d').hasMatch(password);
+
+    if (password.length < 8) {
       return 'Use pelo menos 8 caracteres.';
+    }
+
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      return 'Use letra maiuscula, minuscula e numero.';
+    }
+
+    return null;
+  }
+
+  String? _requiredPasswordConfirmation(String? value) {
+    if (value != _passwordController.text) {
+      return 'As senhas precisam ser iguais.';
     }
 
     return null;
@@ -153,6 +214,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           name: _nameController.text,
           email: _emailController.text,
           password: _passwordController.text,
+          passwordConfirmation: _passwordConfirmationController.text,
         );
 
     if (!mounted || success) {

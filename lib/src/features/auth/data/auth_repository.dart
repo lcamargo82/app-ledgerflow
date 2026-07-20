@@ -74,12 +74,14 @@ class AuthRepository {
     required String name,
     required String email,
     required String password,
+    required String passwordConfirmation,
   }) async {
     try {
       final response = await api.signup(
         name: name,
         email: email,
         password: password,
+        passwordConfirmation: passwordConfirmation,
       );
       await storage.save(response.tokens);
       final me = await api.me();

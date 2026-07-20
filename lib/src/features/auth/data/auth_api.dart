@@ -26,10 +26,16 @@ class AuthApi {
     required String name,
     required String email,
     required String password,
+    required String passwordConfirmation,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/auth/signup',
-      data: {'name': name, 'email': email, 'password': password},
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'passwordConfirmation': passwordConfirmation,
+      },
     );
 
     return AuthResponseDto.fromJson(response.data ?? {});
