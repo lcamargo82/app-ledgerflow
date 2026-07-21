@@ -9,6 +9,8 @@ import '../../features/settings/presentation/controllers/settings_controller.dar
 import '../../features/transactions/domain/transaction_entry_type.dart';
 import '../../features/transactions/presentation/controllers/transactions_controller.dart';
 import '../../features/transactions/presentation/transactions_screen.dart';
+import '../../features/workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../features/workspaces/presentation/workspace_permissions.dart';
 import '../theme/app_colors.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -24,7 +26,20 @@ class _AppShellState extends ConsumerState<AppShell> {
   bool _menuOpen = false;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(workspaceCollaborationControllerProvider).load(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final canWrite = canWriteWorkspace(
+      auth: ref.watch(authControllerProvider),
+      collaboration: ref.watch(workspaceCollaborationControllerProvider),
+    );
+
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -46,6 +61,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       bottomNavigationBar: _LedgerBottomBar(
         selectedIndex: widget.navigationShell.currentIndex,
         menuOpen: _menuOpen,
+        canCreate: canWrite,
         onDestinationSelected: _selectDestination,
         onToggleMenu: _toggleMenu,
       ),
@@ -90,6 +106,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       case 3:
         ref.read(settingsControllerProvider).load();
         ref.read(authControllerProvider).loadProfile();
+        ref.read(workspaceCollaborationControllerProvider).load();
     }
   }
 }
@@ -98,12 +115,14 @@ class _LedgerBottomBar extends StatelessWidget {
   const _LedgerBottomBar({
     required this.selectedIndex,
     required this.menuOpen,
+    required this.canCreate,
     required this.onDestinationSelected,
     required this.onToggleMenu,
   });
 
   final int selectedIndex;
   final bool menuOpen;
+  final bool canCreate;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onToggleMenu;
 
@@ -170,7 +189,7 @@ class _LedgerBottomBar extends StatelessWidget {
                     backgroundColor: AppColors.primaryContainer,
                     foregroundColor: Colors.white,
                     shape: const CircleBorder(),
-                    onPressed: onToggleMenu,
+                    onPressed: canCreate ? onToggleMenu : null,
                     child: AnimatedRotation(
                       duration: const Duration(milliseconds: 180),
                       turns: menuOpen ? .125 : 0,

@@ -47,9 +47,15 @@ class WorkspaceController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    final savedWorkspaceId = await repository.readActiveWorkspaceId();
     _workspaces = await repository.list();
+    final savedExists = _workspaces.any(
+      (workspace) => workspace.id == savedWorkspaceId,
+    );
 
-    if (_activeWorkspaceId == null ||
+    if (savedExists) {
+      _activeWorkspaceId = savedWorkspaceId;
+    } else if (_activeWorkspaceId == null ||
         !_workspaces.any((workspace) => workspace.id == _activeWorkspaceId)) {
       final fallback = _workspaces.firstOrNull?.id;
       if (fallback != null) {

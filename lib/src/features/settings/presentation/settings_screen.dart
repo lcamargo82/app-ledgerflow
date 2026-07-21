@@ -6,6 +6,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../workspaces/presentation/widgets/workspace_switcher_card.dart';
 import 'controllers/settings_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -53,6 +55,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _InlineError(message: auth.errorMessage!),
         ],
         const SizedBox(height: 24),
+        WorkspaceSwitcherCard(
+          onChanged: () =>
+              ref.read(workspaceCollaborationControllerProvider).load(),
+        ),
+        const SizedBox(height: 16),
         _SettingsTile(
           icon: Icons.account_balance_outlined,
           title: 'Minhas contas',
