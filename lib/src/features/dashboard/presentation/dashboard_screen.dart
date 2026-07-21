@@ -36,9 +36,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       title: 'Olá!',
       subtitle: 'Aqui esta o resumo do seu fluxo financeiro neste mes.',
       children: [
-        if (controller.isLoading)
+        if (controller.isLoading && summary == null)
           const _LoadingState()
-        else if (controller.errorMessage != null)
+        else if (controller.errorMessage != null && summary == null)
           _ErrorState(
             message: controller.errorMessage!,
             onRetry: () => ref.read(dashboardControllerProvider).load(),
@@ -48,6 +48,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onCreateAccount: () => context.go('/settings/accounts'),
           )
         else ...[
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: controller.isLoading
+                ? const Padding(
+                    key: ValueKey('dashboard-refreshing'),
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: LinearProgressIndicator(minHeight: 2),
+                  )
+                : const SizedBox.shrink(key: ValueKey('dashboard-idle')),
+          ),
           _BalanceCard(summary: summary),
           const SizedBox(height: 16),
           Row(

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/dashboard/presentation/controllers/dashboard_controller.dart';
 import '../../features/reports/presentation/controllers/reports_controller.dart';
+import '../../features/settings/presentation/controllers/settings_controller.dart';
 import '../../features/transactions/domain/transaction_entry_type.dart';
 import '../../features/transactions/presentation/controllers/transactions_controller.dart';
 import '../../features/transactions/presentation/transactions_screen.dart';
@@ -55,11 +57,16 @@ class _AppShellState extends ConsumerState<AppShell> {
       setState(() => _menuOpen = false);
     }
 
-    widget.navigationShell.goBranch(
-      index,
-      initialLocation:
-          index == widget.navigationShell.currentIndex || index == 3,
-    );
+    if (index == 3) {
+      widget.navigationShell.goBranch(index, initialLocation: true);
+      context.go('/settings');
+    } else {
+      widget.navigationShell.goBranch(
+        index,
+        initialLocation: index == widget.navigationShell.currentIndex,
+      );
+    }
+
     _refreshDestination(index);
   }
 
@@ -80,6 +87,9 @@ class _AppShellState extends ConsumerState<AppShell> {
         ref.read(transactionsControllerProvider).load();
       case 2:
         ref.read(reportsControllerProvider).load();
+      case 3:
+        ref.read(settingsControllerProvider).load();
+        ref.read(authControllerProvider).loadProfile();
     }
   }
 }
@@ -249,50 +259,115 @@ class _QuickActionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: 300,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: const Alignment(-.86, .48),
-              child: _QuickActionButton(
-                label: TransactionEntryType.transfer.label,
-                icon: Icons.swap_horiz,
-                iconColor: AppColors.primary,
-                onTap: () => onSelect(TransactionEntryType.transfer),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const itemWidth = 136.0;
+        final center = constraints.maxWidth / 2;
+
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          builder: (context, progress, child) {
+            return SizedBox(
+              height: 328,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _AnimatedQuickAction(
+                    progress: progress,
+                    delay: 0,
+                    left: center - itemWidth - 14,
+                    top: 24,
+                    child: _QuickActionButton(
+                      label: TransactionEntryType.income.label,
+                      icon: Icons.trending_up,
+                      iconColor: AppColors.emerald,
+                      onTap: () => onSelect(TransactionEntryType.income),
+                    ),
+                  ),
+                  _AnimatedQuickAction(
+                    progress: progress,
+                    delay: .08,
+                    left: center + 14,
+                    top: 24,
+                    child: _QuickActionButton(
+                      label: TransactionEntryType.cardExpense.label,
+                      icon: Icons.credit_card,
+                      iconColor: AppColors.tertiary,
+                      onTap: () => onSelect(TransactionEntryType.cardExpense),
+                    ),
+                  ),
+                  _AnimatedQuickAction(
+                    progress: progress,
+                    delay: .16,
+                    left: 8,
+                    bottom: 58,
+                    child: _QuickActionButton(
+                      label: TransactionEntryType.transfer.label,
+                      icon: Icons.swap_horiz,
+                      iconColor: AppColors.primary,
+                      onTap: () => onSelect(TransactionEntryType.transfer),
+                    ),
+                  ),
+                  _AnimatedQuickAction(
+                    progress: progress,
+                    delay: .24,
+                    right: 8,
+                    bottom: 58,
+                    child: _QuickActionButton(
+                      label: TransactionEntryType.expense.label,
+                      icon: Icons.trending_down,
+                      iconColor: AppColors.error,
+                      onTap: () => onSelect(TransactionEntryType.expense),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Align(
-              alignment: const Alignment(-.34, -.48),
-              child: _QuickActionButton(
-                label: TransactionEntryType.income.label,
-                icon: Icons.trending_up,
-                iconColor: AppColors.emerald,
-                onTap: () => onSelect(TransactionEntryType.income),
-              ),
-            ),
-            Align(
-              alignment: const Alignment(.34, -.48),
-              child: _QuickActionButton(
-                label: TransactionEntryType.cardExpense.label,
-                icon: Icons.credit_card,
-                iconColor: AppColors.tertiary,
-                onTap: () => onSelect(TransactionEntryType.cardExpense),
-              ),
-            ),
-            Align(
-              alignment: const Alignment(.86, .48),
-              child: _QuickActionButton(
-                label: TransactionEntryType.expense.label,
-                icon: Icons.trending_down,
-                iconColor: AppColors.error,
-                onTap: () => onSelect(TransactionEntryType.expense),
-              ),
-            ),
-          ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AnimatedQuickAction extends StatelessWidget {
+  const _AnimatedQuickAction({
+    required this.progress,
+    required this.delay,
+    required this.child,
+    this.left,
+    this.top,
+    this.right,
+    this.bottom,
+  });
+
+  final double progress;
+  final double delay;
+  final Widget child;
+  final double? left;
+  final double? top;
+  final double? right;
+  final double? bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final itemProgress = ((progress - delay) / (1 - delay)).clamp(0.0, 1.0);
+
+    return Positioned(
+      left: left,
+      top: top,
+      right: right,
+      bottom: bottom,
+      child: Opacity(
+        opacity: itemProgress,
+        child: Transform.translate(
+          offset: Offset(0, (1 - itemProgress) * 24),
+          child: Transform.scale(
+            scale: .88 + (.12 * itemProgress),
+            child: child,
+          ),
         ),
       ),
     );
@@ -318,17 +393,17 @@ class _QuickActionButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(56),
       onTap: onTap,
       child: SizedBox(
-        width: 128,
+        width: 136,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 38,
+              radius: 36,
               backgroundColor: AppColors.surfaceHighest,
               foregroundColor: iconColor,
               child: Icon(icon, size: 30),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -336,7 +411,8 @@ class _QuickActionButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 15,
+                height: 1.1,
                 fontWeight: FontWeight.w700,
               ),
             ),
