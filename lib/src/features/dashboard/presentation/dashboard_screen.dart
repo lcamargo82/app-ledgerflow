@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../core/colors/category_color_resolver.dart';
 import '../../../core/formatting/money.dart';
 import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
@@ -247,9 +248,10 @@ class _CategoryChartCard extends StatelessWidget {
                           .map(
                             (expense) => PieChartSectionData(
                               value: expense.amountCents.abs().toDouble(),
-                              color:
-                                  _colorFromHex(expense.color) ??
-                                  AppColors.primaryContainer,
+                              color: CategoryColorResolver.forExpense(
+                                expense,
+                                expenses,
+                              ),
                               radius: 28,
                               showTitle: false,
                             ),
@@ -260,7 +262,10 @@ class _CategoryChartCard extends StatelessWidget {
                 );
                 final legend = Column(
                   children: expenses
-                      .map((expense) => _LegendRow(expense: expense))
+                      .map(
+                        (expense) =>
+                            _LegendRow(expense: expense, allExpenses: expenses),
+                      )
                       .toList(),
                 );
 
@@ -327,9 +332,10 @@ class _EmptyExpensesState extends StatelessWidget {
 }
 
 class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.expense});
+  const _LegendRow({required this.expense, required this.allExpenses});
 
   final ExpenseByCategory expense;
+  final List<ExpenseByCategory> allExpenses;
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +351,7 @@ class _LegendRow extends StatelessWidget {
             width: 12,
             height: 12,
             decoration: BoxDecoration(
-              color: _colorFromHex(expense.color) ?? AppColors.primaryContainer,
+              color: CategoryColorResolver.forExpense(expense, allExpenses),
               borderRadius: BorderRadius.circular(3),
             ),
           ),

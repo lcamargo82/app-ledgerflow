@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../core/colors/category_color_resolver.dart';
 import '../../../core/formatting/money.dart';
 import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
@@ -68,7 +69,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ...dashboard.expensesByCategory.map(
               (expense) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: _CategoryRankTile(expense: expense),
+                child: _CategoryRankTile(
+                  expense: expense,
+                  allExpenses: dashboard.expensesByCategory,
+                ),
               ),
             ),
         ],
@@ -103,7 +107,10 @@ class _PeriodSelector extends StatelessWidget {
             child: Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           IconButton(
@@ -330,13 +337,14 @@ class _ChartLegend extends StatelessWidget {
 }
 
 class _CategoryRankTile extends StatelessWidget {
-  const _CategoryRankTile({required this.expense});
+  const _CategoryRankTile({required this.expense, required this.allExpenses});
 
   final ExpenseByCategory expense;
+  final List<ExpenseByCategory> allExpenses;
 
   @override
   Widget build(BuildContext context) {
-    final color = _colorFromHex(expense.color) ?? AppColors.primaryContainer;
+    final color = CategoryColorResolver.forExpense(expense, allExpenses);
     final progress = (expense.percent / 100).clamp(0.0, 1.0);
 
     return LfCard(
@@ -485,12 +493,4 @@ class _BarGroup {
       ],
     );
   }
-}
-
-Color? _colorFromHex(String? hex) {
-  if (hex == null || !RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) {
-    return null;
-  }
-
-  return Color(int.parse(hex.substring(1), radix: 16) | 0xFF000000);
 }
