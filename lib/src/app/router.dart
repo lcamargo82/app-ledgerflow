@@ -14,6 +14,7 @@ import '../features/reports/presentation/reports_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/transactions/presentation/transactions_screen.dart';
 import '../features/workspaces/presentation/workspace_collaboration_screen.dart';
+import '../features/workspaces/presentation/workspace_invitation_response_screen.dart';
 import 'shell/app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -30,15 +31,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location == '/forgot-password';
       final isSplash = location == '/splash';
       final isOnboarding = location == '/onboarding';
+      final isInvitationRoute = location == '/workspace-invitations/accept';
 
       return switch (authController.status) {
-        AuthStatus.unknown => isSplash ? null : '/splash',
-        AuthStatus.unauthenticated => isPublicRoute ? null : '/login',
+        AuthStatus.unknown => isSplash || isInvitationRoute ? null : '/splash',
+        AuthStatus.unauthenticated =>
+          isPublicRoute || isInvitationRoute ? null : '/login',
         AuthStatus.authenticated => _authenticatedRedirect(
           authController,
           isPublicRoute: isPublicRoute,
           isSplash: isSplash,
           isOnboarding: isOnboarding,
+          isInvitationRoute: isInvitationRoute,
         ),
       };
     },
@@ -67,6 +71,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/workspace-invitations/accept',
+        name: 'workspace-invitation-accept',
+        builder: (context, state) => WorkspaceInvitationResponseScreen(
+          token: state.uri.queryParameters['token'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/accounts/first',
@@ -147,7 +158,12 @@ String? _authenticatedRedirect(
   required bool isPublicRoute,
   required bool isSplash,
   required bool isOnboarding,
+  required bool isInvitationRoute,
 }) {
+  if (isInvitationRoute) {
+    return null;
+  }
+
   if (authController.onboardingRequired) {
     return isOnboarding ? null : '/onboarding';
   }

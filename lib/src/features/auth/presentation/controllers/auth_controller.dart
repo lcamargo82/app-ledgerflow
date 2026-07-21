@@ -88,6 +88,13 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<bool> refreshMe() async {
+    return _run(() async {
+      _me = await _repository.me();
+      _status = AuthStatus.authenticated;
+    });
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
