@@ -177,7 +177,9 @@ class _TransactionDayGroup extends StatelessWidget {
               child: _TransactionRow(
                 transaction: transaction,
                 account: controller.accountById(transaction.accountId),
-                category: controller.categoryById(transaction.categoryId),
+                category: transaction.categoryId == null
+                    ? null
+                    : controller.categoryById(transaction.categoryId!),
               ),
             ),
           ),
@@ -200,11 +202,15 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.type == TransactionType.expense
-        ? AppColors.error
-        : AppColors.emerald;
+    final amountColor = switch (transaction.type) {
+      TransactionType.expense => AppColors.error,
+      TransactionType.income => AppColors.emerald,
+      TransactionType.transfer => AppColors.primary,
+    };
     final icon = transaction.isSystemGenerated
         ? Icons.lock_outline
+        : transaction.type == TransactionType.transfer
+        ? Icons.swap_horiz
         : LedgerIconMapper.fromKey(category?.icon);
 
     return LfCard(

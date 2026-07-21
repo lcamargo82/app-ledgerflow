@@ -51,9 +51,15 @@ class TransactionsController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   List<Category> categoriesFor(TransactionType type) {
-    final categoryType = type == TransactionType.income
-        ? CategoryType.income
-        : CategoryType.expense;
+    final categoryType = switch (type) {
+      TransactionType.income => CategoryType.income,
+      TransactionType.expense => CategoryType.expense,
+      TransactionType.transfer => null,
+    };
+
+    if (categoryType == null) {
+      return const [];
+    }
 
     return _categories
         .where((category) => category.type == categoryType)
