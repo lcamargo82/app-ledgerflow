@@ -33,6 +33,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final invitationToken = GoRouterState.of(
+      context,
+    ).uri.queryParameters['invitationToken'];
 
     return Scaffold(
       appBar: AppBar(
@@ -146,7 +149,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                       const SizedBox(height: 12),
                       TextButton(
-                        onPressed: () => context.go('/login'),
+                        onPressed: () =>
+                            context.go(_authPath('/login', invitationToken)),
                         child: const Text('Ja tenho uma conta'),
                       ),
                     ],
@@ -217,7 +221,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           passwordConfirmation: _passwordConfirmationController.text,
         );
 
-    if (!mounted || success) {
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      final invitationToken = GoRouterState.of(
+        context,
+      ).uri.queryParameters['invitationToken'];
+
+      if (invitationToken != null && invitationToken.trim().isNotEmpty) {
+        context.go(
+          '/workspace-invitations/accept?token=${Uri.encodeComponent(invitationToken)}',
+        );
+      }
+
       return;
     }
 
@@ -226,4 +244,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       SnackBar(content: Text(error ?? 'Nao foi possivel criar sua conta.')),
     );
   }
+}
+
+String _authPath(String path, String? invitationToken) {
+  if (invitationToken == null || invitationToken.trim().isEmpty) {
+    return path;
+  }
+
+  return '$path?invitationToken=${Uri.encodeComponent(invitationToken)}';
 }

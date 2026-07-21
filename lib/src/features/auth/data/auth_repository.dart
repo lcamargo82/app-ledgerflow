@@ -93,6 +93,17 @@ class AuthRepository {
     }
   }
 
+  Future<AuthMe> me() async {
+    try {
+      final me = await api.me();
+      await _saveActiveWorkspace(me);
+
+      return me;
+    } catch (error) {
+      throw ApiErrorParser.parse(error);
+    }
+  }
+
   Future<UserProfile> profile() async {
     try {
       return api.profile();
