@@ -13,6 +13,7 @@ import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/transactions/presentation/transactions_screen.dart';
+import '../features/workspaces/presentation/workspace_collaboration_screen.dart';
 import 'shell/app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -124,6 +125,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'categories',
                     name: 'categories',
                     builder: (context, state) => const CategoriesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'collaboration',
+                    name: 'collaboration',
+                    builder: (context, state) =>
+                        const WorkspaceCollaborationScreen(),
                   ),
                 ],
               ),
