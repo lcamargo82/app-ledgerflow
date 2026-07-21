@@ -11,10 +11,15 @@ class TransactionsApi {
     required String workspaceId,
     int page = 1,
     int perPage = 30,
+    TransactionType? type,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/workspaces/$workspaceId/transactions',
-      queryParameters: {'page': page, 'perPage': perPage},
+      queryParameters: {
+        'page': page,
+        'perPage': perPage,
+        if (type != null) 'type': type.apiValue,
+      },
     );
 
     return TransactionPage.fromJson(_unwrapObject(response.data));

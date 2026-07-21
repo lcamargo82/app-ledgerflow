@@ -55,6 +55,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           actionLabel: 'Nova',
           onAction: () => openNewTransactionSheet(context),
         ),
+        const SizedBox(height: 12),
+        _TransactionTypeFilters(
+          selected: controller.typeFilter,
+          onSelected: (type) =>
+              ref.read(transactionsControllerProvider).setTypeFilter(type),
+        ),
         const SizedBox(height: 8),
         if (controller.isLoading)
           const Center(
@@ -180,6 +186,14 @@ class _TransactionDayGroup extends StatelessWidget {
                 category: transaction.categoryId == null
                     ? null
                     : controller.categoryById(transaction.categoryId!),
+                onTap: () => _showTransactionDetails(
+                  context,
+                  transaction: transaction,
+                  account: controller.accountById(transaction.accountId),
+                  category: transaction.categoryId == null
+                      ? null
+                      : controller.categoryById(transaction.categoryId!),
+                ),
               ),
             ),
           ),
@@ -194,11 +208,13 @@ class _TransactionRow extends StatelessWidget {
     required this.transaction,
     required this.account,
     required this.category,
+    required this.onTap,
   });
 
   final LedgerTransaction transaction;
   final Account? account;
   final Category? category;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -213,40 +229,111 @@ class _TransactionRow extends StatelessWidget {
         ? Icons.swap_horiz
         : LedgerIconMapper.fromKey(category?.icon);
 
-    return LfCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: AppColors.surfaceHigh,
-            foregroundColor: amountColor,
-            child: Icon(icon),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.description,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  [
-                    if (category != null) category!.name,
-                    if (account != null) account!.name,
-                    if (transaction.isSystemGenerated) 'Saldo inicial',
-                  ].join(' • '),
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-              ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: LfCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: AppColors.surfaceHigh,
+              foregroundColor: amountColor,
+              child: Icon(icon),
             ),
-          ),
-          Text(
-            Money.formatCents(transaction.signedAmountCents),
-            style: TextStyle(color: amountColor, fontWeight: FontWeight.w700),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction.description,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    _transactionSubtitle(transaction, account, category),
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              Money.formatCents(transaction.signedAmountCents),
+              style: TextStyle(color: amountColor, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionTypeFilters extends StatelessWidget {
+  const _TransactionTypeFilters({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final TransactionType? selected;
+  final ValueChanged<TransactionType?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _FilterChip(
+          label: 'Todas',
+          selected: selected == null,
+          onSelected: () => onSelected(null),
+        ),
+        _FilterChip(
+          label: 'Receitas',
+          selected: selected == TransactionType.income,
+          onSelected: () => onSelected(TransactionType.income),
+        ),
+        _FilterChip(
+          label: 'Despesas',
+          selected: selected == TransactionType.expense,
+          onSelected: () => onSelected(TransactionType.expense),
+        ),
+        _FilterChip(
+          label: 'Transferencias',
+          selected: selected == TransactionType.transfer,
+          onSelected: () => onSelected(TransactionType.transfer),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+      selectedColor: AppColors.primaryContainer,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.onSurface,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      ),
+      backgroundColor: AppColors.surfaceContainer,
+      side: BorderSide(
+        color: selected ? AppColors.primary : AppColors.outlineVariant,
       ),
     );
   }
@@ -312,6 +399,107 @@ class _ErrorState extends StatelessWidget {
             onPressed: onRetry,
             icon: const Icon(Icons.refresh),
             label: const Text('Tentar novamente'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionDetailSheet extends StatelessWidget {
+  const _TransactionDetailSheet({
+    required this.transaction,
+    required this.account,
+    required this.category,
+  });
+
+  final LedgerTransaction transaction;
+  final Account? account;
+  final Category? category;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTransfer = transaction.type == TransactionType.transfer;
+    final amountColor = switch (transaction.type) {
+      TransactionType.expense => AppColors.error,
+      TransactionType.income => AppColors.emerald,
+      TransactionType.transfer => AppColors.primary,
+    };
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              transaction.description,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              Money.formatCents(transaction.signedAmountCents),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: amountColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _DetailRow(label: 'Tipo', value: transaction.type.label),
+            _DetailRow(
+              label: 'Data',
+              value: _dateLabel(transaction.occurredAt),
+            ),
+            if (isTransfer) ...[
+              _DetailRow(
+                label: 'Origem',
+                value: account?.name ?? 'Conta origem',
+              ),
+              _DetailRow(
+                label: 'Destino',
+                value: transaction.destinationAccount?.name ?? 'Conta destino',
+              ),
+            ] else ...[
+              _DetailRow(label: 'Conta', value: account?.name ?? 'Conta'),
+              _DetailRow(
+                label: 'Categoria',
+                value: category?.name ?? 'Sem categoria',
+              ),
+            ],
+            if (transaction.isSystemGenerated)
+              const _DetailRow(label: 'Origem', value: 'Saldo inicial'),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 84,
+            child: Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -699,6 +887,43 @@ Map<String, List<LedgerTransaction>> _groupTransactions(
   }
 
   return grouped;
+}
+
+void _showTransactionDetails(
+  BuildContext context, {
+  required LedgerTransaction transaction,
+  required Account? account,
+  required Category? category,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (context) => _TransactionDetailSheet(
+      transaction: transaction,
+      account: account,
+      category: category,
+    ),
+  );
+}
+
+String _transactionSubtitle(
+  LedgerTransaction transaction,
+  Account? account,
+  Category? category,
+) {
+  if (transaction.type == TransactionType.transfer) {
+    final origin = account?.name ?? 'Conta origem';
+    final destination = transaction.destinationAccount?.name ?? 'Conta destino';
+
+    return '$origin -> $destination';
+  }
+
+  return [
+    if (category != null) category.name,
+    if (account != null) account.name,
+    if (transaction.isSystemGenerated) 'Saldo inicial',
+  ].join(' • ');
 }
 
 String _dateLabel(DateTime date) {
