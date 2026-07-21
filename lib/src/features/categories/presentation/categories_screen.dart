@@ -5,6 +5,9 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../workspaces/presentation/workspace_permissions.dart';
 import '../domain/category.dart';
 import 'controllers/categories_controller.dart';
 
@@ -24,7 +27,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    Future.microtask(() => ref.read(categoriesControllerProvider).load());
+    Future.microtask(() {
+      ref.read(categoriesControllerProvider).load();
+      ref.read(workspaceCollaborationControllerProvider).load();
+    });
   }
 
   @override
@@ -37,6 +43,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(categoriesControllerProvider);
+    final canWrite = canWriteWorkspace(
+      auth: ref.watch(authControllerProvider),
+      collaboration: ref.watch(workspaceCollaborationControllerProvider),
+    );
 
     return LedgerScaffold(
       title: 'Categorias',
@@ -46,7 +56,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
           padding: const EdgeInsets.only(right: 12),
           child: IconButton.filled(
             tooltip: 'Adicionar categoria',
-            onPressed: controller.isLoading ? null : _openCategoryForm,
+            onPressed: controller.isLoading || !canWrite
+                ? null
+                : _openCategoryForm,
             icon: const Icon(Icons.add),
           ),
         ),
@@ -101,12 +113,16 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
                 _CategoryList(
                   categories: controller.byType(CategoryType.income),
                   emptyLabel: 'Nenhuma categoria de receita',
-                  onCreate: () => _openCategoryForm(CategoryType.income),
+                  onCreate: canWrite
+                      ? () => _openCategoryForm(CategoryType.income)
+                      : null,
                 ),
                 _CategoryList(
                   categories: controller.byType(CategoryType.expense),
                   emptyLabel: 'Nenhuma categoria de despesa',
-                  onCreate: () => _openCategoryForm(CategoryType.expense),
+                  onCreate: canWrite
+                      ? () => _openCategoryForm(CategoryType.expense)
+                      : null,
                 ),
               ],
             ),
@@ -145,7 +161,7 @@ class _CategoryList extends StatelessWidget {
 
   final List<Category> categories;
   final String emptyLabel;
-  final VoidCallback onCreate;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +228,7 @@ class _EmptyCategoriesCard extends StatelessWidget {
   const _EmptyCategoriesCard({required this.label, required this.onCreate});
 
   final String label;
-  final VoidCallback onCreate;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {

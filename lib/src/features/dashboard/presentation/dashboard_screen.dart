@@ -10,6 +10,10 @@ import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../workspaces/presentation/workspace_permissions.dart';
+import '../../workspaces/presentation/widgets/workspace_switcher_card.dart';
 import '../domain/dashboard_summary.dart';
 import 'controllers/dashboard_controller.dart';
 
@@ -31,11 +35,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final controller = ref.watch(dashboardControllerProvider);
     final summary = controller.summary;
+    final canWrite = canWriteWorkspace(
+      auth: ref.watch(authControllerProvider),
+      collaboration: ref.watch(workspaceCollaborationControllerProvider),
+    );
 
     return LedgerScaffold(
       title: 'Olá!',
       subtitle: 'Aqui esta o resumo do seu fluxo financeiro neste mes.',
       children: [
+        WorkspaceSwitcherCard(
+          onChanged: () => ref.read(dashboardControllerProvider).load(),
+        ),
+        const SizedBox(height: 16),
         if (controller.isLoading && summary == null)
           const _LoadingState()
         else if (controller.errorMessage != null && summary == null)
@@ -45,7 +57,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           )
         else if (summary == null || !summary.hasAccounts)
           _EmptyDashboardCard(
-            onCreateAccount: () => context.go('/settings/accounts'),
+            onCreateAccount: canWrite
+                ? () => context.go('/settings/accounts')
+                : null,
           )
         else ...[
           AnimatedSwitcher(
@@ -64,7 +78,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => context.go('/transactions'),
+                  onPressed: canWrite
+                      ? () => context.go('/transactions')
+                      : null,
                   icon: const Icon(Icons.add_circle_outline),
                   label: const Text('Receita'),
                 ),
@@ -72,7 +88,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.go('/transactions'),
+                  onPressed: canWrite
+                      ? () => context.go('/transactions')
+                      : null,
                   icon: const Icon(Icons.remove_circle_outline),
                   label: const Text('Despesa'),
                 ),
@@ -444,7 +462,7 @@ class _AccountTile extends StatelessWidget {
 class _EmptyDashboardCard extends StatelessWidget {
   const _EmptyDashboardCard({required this.onCreateAccount});
 
-  final VoidCallback onCreateAccount;
+  final VoidCallback? onCreateAccount;
 
   @override
   Widget build(BuildContext context) {

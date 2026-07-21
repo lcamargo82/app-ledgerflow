@@ -5,6 +5,9 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/formatting/money.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../workspaces/presentation/workspace_permissions.dart';
 import '../domain/account.dart';
 import '../domain/institution.dart';
 import 'controllers/accounts_controller.dart';
@@ -22,12 +25,19 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(accountsControllerProvider).load());
+    Future.microtask(() {
+      ref.read(accountsControllerProvider).load();
+      ref.read(workspaceCollaborationControllerProvider).load();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(accountsControllerProvider);
+    final canWrite = canWriteWorkspace(
+      auth: ref.watch(authControllerProvider),
+      collaboration: ref.watch(workspaceCollaborationControllerProvider),
+    );
 
     return LedgerScaffold(
       title: widget.firstAccount ? 'Primeira conta' : 'Minhas contas',
@@ -40,7 +50,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           padding: const EdgeInsets.only(right: 12),
           child: IconButton.filled(
             tooltip: 'Adicionar conta',
-            onPressed: controller.isLoading ? null : _openAccountForm,
+            onPressed: controller.isLoading || !canWrite
+                ? null
+                : _openAccountForm,
             icon: const Icon(Icons.add),
           ),
         ),
@@ -59,7 +71,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
             onRetry: () => ref.read(accountsControllerProvider).load(),
           )
         else if (controller.accounts.isEmpty)
-          _EmptyAccountsCard(onCreate: _openAccountForm)
+          _EmptyAccountsCard(onCreate: canWrite ? _openAccountForm : null)
         else ...[
           _TotalCard(totalCents: controller.totalIncludedCents),
           const SizedBox(height: 16),
@@ -186,7 +198,7 @@ class _AccountTile extends StatelessWidget {
 class _EmptyAccountsCard extends StatelessWidget {
   const _EmptyAccountsCard({required this.onCreate});
 
-  final VoidCallback onCreate;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {

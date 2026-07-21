@@ -7,8 +7,11 @@ import '../../../core/icons/ledger_icon_mapper.dart';
 import '../../../core/widgets/ledger_scaffold.dart';
 import '../../../core/widgets/lf_card.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../accounts/domain/account.dart';
 import '../../categories/domain/category.dart';
+import '../../workspaces/presentation/controllers/workspace_collaboration_controller.dart';
+import '../../workspaces/presentation/workspace_permissions.dart';
 import '../domain/transaction.dart';
 import '../domain/transaction_entry_type.dart';
 import 'controllers/transactions_controller.dart';
@@ -37,12 +40,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(transactionsControllerProvider).load());
+    Future.microtask(() {
+      ref.read(transactionsControllerProvider).load();
+      ref.read(workspaceCollaborationControllerProvider).load();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(transactionsControllerProvider);
+    final canWrite = canWriteWorkspace(
+      auth: ref.watch(authControllerProvider),
+      collaboration: ref.watch(workspaceCollaborationControllerProvider),
+    );
 
     return LedgerScaffold(
       title: 'Transações',
@@ -52,8 +62,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         const SizedBox(height: 24),
         SectionHeader(
           title: 'Este mes',
-          actionLabel: 'Nova',
-          onAction: () => openNewTransactionSheet(context),
+          actionLabel: canWrite ? 'Nova' : null,
+          onAction: canWrite ? () => openNewTransactionSheet(context) : null,
         ),
         const SizedBox(height: 12),
         _TransactionTypeFilters(
@@ -76,7 +86,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           )
         else if (controller.transactions.isEmpty)
           _EmptyTransactionsCard(
-            onCreate: () => openNewTransactionSheet(context),
+            onCreate: canWrite ? () => openNewTransactionSheet(context) : null,
           )
         else
           ..._groupTransactions(controller.transactions).entries.map(
@@ -342,7 +352,7 @@ class _FilterChip extends StatelessWidget {
 class _EmptyTransactionsCard extends StatelessWidget {
   const _EmptyTransactionsCard({required this.onCreate});
 
-  final VoidCallback onCreate;
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
