@@ -16,7 +16,7 @@ import '../features/transactions/presentation/transactions_screen.dart';
 import 'shell/app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authController = ref.watch(authControllerProvider);
+  final authController = ref.read(authControllerProvider);
 
   return GoRouter(
     initialLocation: '/splash',
