@@ -335,6 +335,7 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
   final _descriptionController = TextEditingController();
   late TransactionEntryType _entryType = widget.initialType;
   String? _accountId;
+  String? _destinationAccountId;
   String? _categoryId;
   DateTime _occurredAt = DateTime.now();
 
@@ -355,25 +356,33 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
   Widget build(BuildContext context) {
     final controller = ref.watch(transactionsControllerProvider);
     final transactionType = _transactionTypeFor(_entryType);
-    final categories = transactionType == null
-        ? const <Category>[]
-        : controller.categoriesFor(transactionType);
+    final isTransfer = transactionType == TransactionType.transfer;
+    final categories = controller.categoriesFor(transactionType);
     final accountValue =
         controller.accounts.any((account) => account.id == _accountId)
         ? _accountId
+        : null;
+    final destinationAccounts = controller.accounts
+        .where((account) => account.id != accountValue)
+        .toList();
+    final destinationAccountValue =
+        destinationAccounts.any(
+          (account) => account.id == _destinationAccountId,
+        )
+        ? _destinationAccountId
         : null;
     final categoryValue =
         categories.any((category) => category.id == _categoryId)
         ? _categoryId
         : null;
-    final unsupported = transactionType == null;
     final canSubmit =
         !controller.isLoading &&
         !controller.isSaving &&
         controller.accounts.isNotEmpty &&
-        categories.isNotEmpty &&
         accountValue != null &&
-        categoryValue != null;
+        (isTransfer
+            ? destinationAccountValue != null
+            : categories.isNotEmpty && categoryValue != null);
     final title = switch (_entryType) {
       TransactionEntryType.income => 'Nova receita',
       TransactionEntryType.expense => 'Nova despesa',
@@ -429,66 +438,95 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                           setState(() {
                             _entryType = selected.first;
                             _categoryId = null;
+                            _destinationAccountId = null;
                           });
                         },
                       ),
-                      if (unsupported) ...[
-                        const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                      if (controller.isLoading)
+                        const LfCard(
+                          child: Row(
+                            children: [
+                              SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Carregando contas e categorias...',
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (controller.accounts.isEmpty)
                         const LfCard(
                           child: Text(
-                            'Este tipo de lancamento sera ativado quando a API expor o contrato dedicado.',
+                            'Cadastre uma conta antes de criar transacoes.',
+                          ),
+                        )
+                      else if (isTransfer && controller.accounts.length < 2)
+                        const LfCard(
+                          child: Text(
+                            'Cadastre ao menos duas contas para criar uma transferencia.',
+                          ),
+                        )
+                      else if (!isTransfer && categories.isEmpty)
+                        LfCard(
+                          child: Text(
+                            'Cadastre uma categoria de ${transactionType.label.toLowerCase()} antes de criar este lancamento.',
                           ),
                         ),
-                      ] else ...[
-                        const SizedBox(height: 16),
-                        if (controller.isLoading)
-                          const LfCard(
-                            child: Row(
-                              children: [
-                                SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Carregando contas e categorias...',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (controller.accounts.isEmpty)
-                          const LfCard(
-                            child: Text(
-                              'Cadastre uma conta antes de criar transacoes.',
-                            ),
-                          )
-                        else if (categories.isEmpty)
-                          LfCard(
-                            child: Text(
-                              'Cadastre uma categoria de ${transactionType.label.toLowerCase()} antes de criar este lancamento.',
-                            ),
+                      if (controller.isLoading ||
+                          controller.accounts.isEmpty ||
+                          (isTransfer && controller.accounts.length < 2) ||
+                          (!isTransfer && categories.isEmpty))
+                        const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: accountValue,
+                        dropdownColor: AppColors.surfaceHighest,
+                        style: const TextStyle(color: AppColors.onSurface),
+                        decoration: InputDecoration(
+                          labelText: isTransfer ? 'Conta origem' : 'Conta',
+                          prefixIcon: const Icon(
+                            Icons.account_balance_wallet_outlined,
                           ),
-                        if (controller.isLoading ||
-                            controller.accounts.isEmpty ||
-                            categories.isEmpty)
-                          const SizedBox(height: 12),
+                        ),
+                        validator: (value) =>
+                            value == null ? 'Escolha uma conta.' : null,
+                        items: controller.accounts
+                            .map(
+                              (account) => DropdownMenuItem(
+                                value: account.id,
+                                child: Text(account.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: controller.isLoading
+                            ? null
+                            : (value) => setState(() {
+                                _accountId = value;
+                                if (_destinationAccountId == value) {
+                                  _destinationAccountId = null;
+                                }
+                              }),
+                      ),
+                      const SizedBox(height: 12),
+                      if (isTransfer)
                         DropdownButtonFormField<String>(
-                          initialValue: accountValue,
+                          initialValue: destinationAccountValue,
                           dropdownColor: AppColors.surfaceHighest,
                           style: const TextStyle(color: AppColors.onSurface),
                           decoration: const InputDecoration(
-                            labelText: 'Conta',
-                            prefixIcon: Icon(
-                              Icons.account_balance_wallet_outlined,
-                            ),
+                            labelText: 'Conta destino',
+                            prefixIcon: Icon(Icons.swap_horiz),
                           ),
                           validator: (value) =>
-                              value == null ? 'Escolha uma conta.' : null,
-                          items: controller.accounts
+                              value == null ? 'Escolha a conta destino.' : null,
+                          items: destinationAccounts
                               .map(
                                 (account) => DropdownMenuItem(
                                   value: account.id,
@@ -498,9 +536,11 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                               .toList(),
                           onChanged: controller.isLoading
                               ? null
-                              : (value) => setState(() => _accountId = value),
-                        ),
-                        const SizedBox(height: 12),
+                              : (value) => setState(
+                                  () => _destinationAccountId = value,
+                                ),
+                        )
+                      else
                         DropdownButtonFormField<String>(
                           initialValue: categoryValue,
                           dropdownColor: AppColors.surfaceHighest,
@@ -523,49 +563,48 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
                               ? null
                               : (value) => setState(() => _categoryId = value),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          validator: _requiredAmount,
-                          decoration: const InputDecoration(
-                            labelText: 'Valor',
-                            prefixIcon: Icon(Icons.attach_money),
-                          ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _amountController,
+                        keyboardType: TextInputType.number,
+                        validator: _requiredAmount,
+                        decoration: const InputDecoration(
+                          labelText: 'Valor',
+                          prefixIcon: Icon(Icons.attach_money),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _descriptionController,
-                          validator: _requiredDescription,
-                          decoration: const InputDecoration(
-                            labelText: 'Descricao',
-                            prefixIcon: Icon(Icons.notes_outlined),
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _descriptionController,
+                        validator: _requiredDescription,
+                        decoration: const InputDecoration(
+                          labelText: 'Descricao',
+                          prefixIcon: Icon(Icons.notes_outlined),
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _pickDate,
-                          icon: const Icon(Icons.calendar_today_outlined),
-                          label: Text(_dateLabel(_occurredAt)),
-                        ),
-                      ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _pickDate,
+                        icon: const Icon(Icons.calendar_today_outlined),
+                        label: Text(_dateLabel(_occurredAt)),
+                      ),
                     ],
                   ),
                 ),
               ),
-              if (!unsupported) ...[
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: canSubmit ? _submit : null,
-                  icon: controller.isSaving
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check),
-                  label: const Text('Salvar transação'),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: canSubmit ? _submit : null,
+                icon: controller.isSaving
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check),
+                label: Text(
+                  isTransfer ? 'Salvar transferencia' : 'Salvar transação',
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -573,12 +612,12 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
     );
   }
 
-  TransactionType? _transactionTypeFor(TransactionEntryType type) {
+  TransactionType _transactionTypeFor(TransactionEntryType type) {
     return switch (type) {
       TransactionEntryType.income => TransactionType.income,
       TransactionEntryType.expense ||
       TransactionEntryType.cardExpense => TransactionType.expense,
-      TransactionEntryType.transfer => null,
+      TransactionEntryType.transfer => TransactionType.transfer,
     };
   }
 
@@ -614,13 +653,16 @@ class _NewTransactionSheetState extends ConsumerState<_NewTransactionSheet> {
   Future<void> _submit() async {
     final type = _transactionTypeFor(_entryType);
 
-    if (type == null || !(_formKey.currentState?.validate() ?? false)) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
     final request = CreateTransactionRequest(
       accountId: _accountId!,
-      categoryId: _categoryId!,
+      categoryId: type == TransactionType.transfer ? null : _categoryId!,
+      destinationAccountId: type == TransactionType.transfer
+          ? _destinationAccountId!
+          : null,
       type: type,
       amountCents: Money.parseInputToCents(_amountController.text),
       occurredAt: _occurredAt,
