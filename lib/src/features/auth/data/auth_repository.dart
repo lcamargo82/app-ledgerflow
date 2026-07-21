@@ -37,11 +37,7 @@ class AuthRepository {
       }
 
       final me = await api.me();
-      final workspaceId = me.currentWorkspace?.id;
-
-      if (workspaceId != null && workspaceId.isNotEmpty) {
-        await activeWorkspaceStorage.save(workspaceId);
-      }
+      await _saveActiveWorkspace(me);
 
       return me;
     } catch (error) {
@@ -58,11 +54,7 @@ class AuthRepository {
       final response = await api.login(email: email, password: password);
       await storage.save(response.tokens);
       final me = await api.me();
-      final workspaceId = me.currentWorkspace?.id;
-
-      if (workspaceId != null && workspaceId.isNotEmpty) {
-        await activeWorkspaceStorage.save(workspaceId);
-      }
+      await _saveActiveWorkspace(me);
 
       return AuthSession(tokens: response.tokens, user: response.user, me: me);
     } catch (error) {
@@ -85,11 +77,7 @@ class AuthRepository {
       );
       await storage.save(response.tokens);
       final me = await api.me();
-      final workspaceId = me.currentWorkspace?.id;
-
-      if (workspaceId != null && workspaceId.isNotEmpty) {
-        await activeWorkspaceStorage.save(workspaceId);
-      }
+      await _saveActiveWorkspace(me);
 
       return AuthSession(tokens: response.tokens, user: response.user, me: me);
     } catch (error) {
@@ -139,6 +127,15 @@ class AuthRepository {
     } finally {
       await storage.clear();
       await activeWorkspaceStorage.clear();
+    }
+  }
+
+  Future<void> _saveActiveWorkspace(AuthMe me) async {
+    final workspaceId =
+        me.currentWorkspace?.id ?? me.workspaces.firstOrNull?.id;
+
+    if (workspaceId != null && workspaceId.isNotEmpty) {
+      await activeWorkspaceStorage.save(workspaceId);
     }
   }
 }
