@@ -68,6 +68,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 8),
         _SettingsTile(
+          icon: Icons.groups_outlined,
+          title: 'Compartilhamento',
+          subtitle: 'Membros e convites do workspace',
+          onTap: () => context.go('/settings/collaboration'),
+        ),
+        const SizedBox(height: 8),
+        _SettingsTile(
           icon: Icons.lock_outline,
           title: 'Trocar senha',
           subtitle: 'Atualize sua senha de acesso',

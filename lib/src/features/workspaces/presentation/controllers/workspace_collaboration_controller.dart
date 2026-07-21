@@ -28,12 +28,14 @@ class WorkspaceCollaborationController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSaving = false;
   String? _errorMessage;
+  String? _invitationsErrorMessage;
 
   List<WorkspaceMember> get members => _members;
   List<WorkspaceInvitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
+  String? get invitationsErrorMessage => _invitationsErrorMessage;
 
   WorkspaceRole? roleForUser(String userId) {
     return _members
@@ -53,15 +55,20 @@ class WorkspaceCollaborationController extends ChangeNotifier {
 
     _isLoading = true;
     _errorMessage = null;
+    _invitationsErrorMessage = null;
     notifyListeners();
 
     try {
-      final results = await Future.wait([
-        repository.listMembers(workspaceId),
-        repository.listInvitations(workspaceId),
-      ]);
-      _members = results[0] as List<WorkspaceMember>;
-      _invitations = results[1] as List<WorkspaceInvitation>;
+      _members = await repository.listMembers(workspaceId);
+
+      try {
+        _invitations = await repository.listInvitations(workspaceId);
+      } catch (error) {
+        _invitations = const [];
+        _invitationsErrorMessage = error is AppException
+            ? error.message
+            : 'Convites indisponiveis para este usuario.';
+      }
     } catch (error) {
       _errorMessage = error is AppException
           ? error.message
