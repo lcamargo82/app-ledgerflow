@@ -18,9 +18,15 @@ class TransactionsRepository {
     required String workspaceId,
     int page = 1,
     int perPage = 30,
+    TransactionType? type,
   }) async {
     try {
-      return api.list(workspaceId: workspaceId, page: page, perPage: perPage);
+      return api.list(
+        workspaceId: workspaceId,
+        page: page,
+        perPage: perPage,
+        type: type,
+      );
     } catch (error) {
       throw ApiErrorParser.parse(error);
     }

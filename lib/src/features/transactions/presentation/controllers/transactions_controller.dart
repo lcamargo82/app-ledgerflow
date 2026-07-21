@@ -38,6 +38,7 @@ class TransactionsController extends ChangeNotifier {
   List<Account> _accounts = const [];
   List<Category> _categories = const [];
   MonthlySummary? _summary;
+  TransactionType? _typeFilter;
   bool _isLoading = false;
   bool _isSaving = false;
   String? _errorMessage;
@@ -46,6 +47,7 @@ class TransactionsController extends ChangeNotifier {
   List<Account> get accounts => _accounts;
   List<Category> get categories => _categories;
   MonthlySummary? get summary => _summary;
+  TransactionType? get typeFilter => _typeFilter;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
@@ -74,6 +76,11 @@ class TransactionsController extends ChangeNotifier {
     return _categories.where((category) => category.id == id).firstOrNull;
   }
 
+  Future<void> setTypeFilter(TransactionType? type) async {
+    _typeFilter = type;
+    await load();
+  }
+
   Future<void> load() async {
     final workspaceId = await activeWorkspaceStorage.read();
 
@@ -90,7 +97,7 @@ class TransactionsController extends ChangeNotifier {
     try {
       final now = DateTime.now();
       final results = await Future.wait([
-        repository.list(workspaceId: workspaceId),
+        repository.list(workspaceId: workspaceId, type: _typeFilter),
         repository.monthlySummary(
           workspaceId: workspaceId,
           month: now.month,
